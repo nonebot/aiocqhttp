@@ -1,0 +1,17 @@
+
+# IntelliJ project files
+.idea
+*.iml
+
+# VS Code project files
+.vscode
+
+# Python cache
+__pycache__
+
+# Build files
+build
+dist
+*.egg-info
+
+dev.py
