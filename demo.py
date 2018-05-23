@@ -1,4 +1,4 @@
-from cqhttp import CQHttp, Error
+from aiocqhttp import CQHttp, Error
 
 bot = CQHttp(api_root='http://127.0.0.1:5700/',
              access_token='123',

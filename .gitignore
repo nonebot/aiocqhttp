@@ -14,4 +14,5 @@ build
 dist
 *.egg-info
 
+venv
 dev.py
