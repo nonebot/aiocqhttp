@@ -10,6 +10,6 @@ setup(
     author_email='richardchienthebest@gmail.com',
     description='CQHttp Python SDK with Asynchronous I/O',
     install_requires=['aiohttp', 'Quart'],
-    python_requires='3.6',
+    python_requires='>=3.6',
     platforms='any'
 )
