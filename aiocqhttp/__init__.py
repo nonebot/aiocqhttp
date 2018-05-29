@@ -4,6 +4,7 @@ from collections import defaultdict
 from functools import wraps
 
 import aiohttp
+from attrdict import AttrDict
 
 from quart import Quart, request, abort, jsonify
 
@@ -14,23 +15,12 @@ class Error(Exception):
         self.retcode = retcode
 
 
-class _ApiClient(object):
-    def __init__(self, api_root=None, access_token=None):
-        self._url = api_root.rstrip('/') if api_root else None
-        self._access_token = access_token
-
-    def __getattr__(self, item):
-        if self._url:
-            return _ApiClient(
-                api_root=self._url + '/' + item,
-                access_token=self._access_token
-            )
-
-    async def __call__(self, *args, **kwargs):
+def _api_client(url, access_token=None):
+    async def do_call(**kwargs):
         headers = {}
-        if self._access_token:
-            headers['Authorization'] = 'Token ' + self._access_token
-        async with aiohttp.request('POST', self._url,
+        if access_token:
+            headers['Authorization'] = 'Token ' + access_token
+        async with aiohttp.request('POST', url,
                                    json=kwargs, headers=headers) as resp:
             if 200 <= resp.status < 300:
                 data = json.loads(await resp.text())
@@ -38,6 +28,8 @@ class _ApiClient(object):
                     raise Error(resp.status, data.get('retcode'))
                 return data.get('data')
             raise Error(resp.status)
+
+    return do_call
 
 
 def _deco_maker(post_type):
@@ -59,30 +51,28 @@ def _deco_maker(post_type):
     return deco_decorator
 
 
-class CQHttp(_ApiClient):
+class CQHttp:
     def __init__(self, api_root=None, access_token=None, secret=None):
-        super().__init__(api_root, access_token)
+        self._api_root = api_root.rstrip('/') if api_root else None
+        self._access_token = access_token
         self._secret = secret
         self._handlers = defaultdict(dict)
-        self._app = Quart(__name__)
-        self._app.route('/', methods=['POST'])(self._handle)
+        self._server_app = Quart(__name__)
+        self._server_app.route('/', methods=['POST'])(self._handle)
 
     on_message = _deco_maker('message')
     on_notice = _deco_maker('notice')
     on_request = _deco_maker('request')
 
     async def _handle(self):
-        headers = request.headers
         if self._secret:
-            # check signature
-            if 'X-Signature' not in headers:
+            if 'X-Signature' not in request.headers:
                 abort(401)
 
             sec = self._secret
-            if isinstance(sec, str):
-                sec = sec.encode('utf-8')
+            sec = sec.encode('utf-8') if isinstance(sec, str) else sec
             sig = hmac.new(sec, await request.get_data(), 'sha1').hexdigest()
-            if headers['X-Signature'] != 'sha1=' + sig:
+            if request.headers['X-Signature'] != 'sha1=' + sig:
                 abort(403)
 
         payload = await request.json
@@ -91,39 +81,28 @@ class CQHttp(_ApiClient):
         if post_type not in ('message', 'notice', 'request'):
             abort(400)
 
-        handler_key = None
-        for pk_pair in (('message', 'message_type'),
-                        ('notice', 'notice_type'),
-                        ('request', 'request_type')):
-            if post_type == pk_pair[0]:
-                handler_key = payload.get(pk_pair[1])
-                if not handler_key:
-                    abort(400)
-                else:
-                    break
-
-        if not handler_key:
+        type_key = payload.get({'message': 'message_type',
+                                'notice': 'notice_type',
+                                'event': 'event',  # compatible with v3.x
+                                'request': 'request_type'}.get(post_type))
+        if not type_key:
             abort(400)
 
-        handler = self._handlers[post_type].get(handler_key)
-        if not handler:
-            handler = self._handlers[post_type].get('*')  # try wildcard
+        handler = self._handlers[post_type].get(
+            type_key, self._handlers[post_type].get('*'))
         if handler:
-            assert callable(handler)
-            response = await handler(payload)
+            response = await handler(AttrDict(payload))
             return jsonify(response) if isinstance(response, dict) else ''
-        return ''
 
     def run(self, host=None, port=None, **kwargs):
-        self._app.run(host=host, port=port, **kwargs)
-
-    async def echo(self, context, **kwargs):
-        context = context.copy()
-        context.update(kwargs)
-        return await self.send_msg(**context)
+        self._server_app.run(host=host, port=port, **kwargs)
 
     async def send(self, context, message, **kwargs):
         context = context.copy()
         context['message'] = message
         context.update(kwargs)
         return await self.send_msg(**context)
+
+    def __getattr__(self, item):
+        if self._api_root:
+            return _api_client(self._api_root + '/' + item, self._access_token)
