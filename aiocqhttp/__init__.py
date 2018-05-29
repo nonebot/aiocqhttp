@@ -4,7 +4,6 @@ from collections import defaultdict
 from functools import wraps
 
 import aiohttp
-from attrdict import AttrDict
 
 from quart import Quart, request, abort, jsonify
 
@@ -76,14 +75,10 @@ class CQHttp:
                 abort(403)
 
         payload = await request.json
-
         post_type = payload.get('post_type')
-        if post_type not in ('message', 'notice', 'request'):
-            abort(400)
 
         type_key = payload.get({'message': 'message_type',
                                 'notice': 'notice_type',
-                                'event': 'event',  # compatible with v3.x
                                 'request': 'request_type'}.get(post_type))
         if not type_key:
             abort(400)
@@ -91,7 +86,7 @@ class CQHttp:
         handler = self._handlers[post_type].get(
             type_key, self._handlers[post_type].get('*'))
         if handler:
-            response = await handler(AttrDict(payload))
+            response = await handler(payload)
             return jsonify(response) if isinstance(response, dict) else ''
 
     def run(self, host=None, port=None, **kwargs):
