@@ -119,7 +119,7 @@ class WebSocketReverseApi(Api):
 
     def _is_available(self) -> bool:
         # available only when current event ws has a corresponding api ws
-        return event_ws.headers.get(
+        return event_ws and event_ws.headers.get(
             'X-Self-ID', '*') in self._connected_clients
 
 

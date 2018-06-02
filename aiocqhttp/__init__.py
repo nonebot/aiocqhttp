@@ -2,7 +2,7 @@ import hmac
 import json
 import functools
 from collections import defaultdict
-from typing import Dict, Any, Optional, AnyStr, Callable
+from typing import Dict, Any, Optional, AnyStr, Callable, Union, List
 
 from quart import Quart, request, abort, jsonify, websocket
 
@@ -35,22 +35,23 @@ class CQHttp:
     def __init__(self,
                  api_root: Optional[str] = None,
                  access_token: Optional[str] = None,
-                 secret: Optional[AnyStr] = None):
+                 secret: Optional[AnyStr] = None,
+                 enable_http_post: bool = True):
         self._secret = secret
         self._handlers = defaultdict(dict)
         self._server_app = Quart(__name__)
 
-        self._server_app.route('/', methods=['POST'])(self._handle_http_event)
+        if enable_http_post:
+            self._server_app.route('/', methods=['POST'])(
+                self._handle_http_event)
 
         self._server_app.websocket('/ws/event/')(self._handle_ws_reverse_event)
         self._server_app.websocket('/ws/api/')(self._handle_ws_reverse_api)
         self._connected_ws_reverse_api_clients = {}
 
-        self.api = UnifiedApi(
-            http_api=HttpApi(api_root, access_token),
-            ws_reverse_api=WebSocketReverseApi(
-                self._connected_ws_reverse_api_clients)
-        )
+        self.api = UnifiedApi(http_api=HttpApi(api_root, access_token),
+                              ws_reverse_api=WebSocketReverseApi(
+                                  self._connected_ws_reverse_api_clients))
 
     on_message = _deco_maker('message')
     on_notice = _deco_maker('notice')
@@ -121,10 +122,12 @@ class CQHttp:
     def run(self, host=None, port=None, *args, **kwargs):
         self._server_app.run(host=host, port=port, *args, **kwargs)
 
-    def __getattr__(self, item):
+    def __getattr__(self, item) -> Callable:
         return self.api.__getattr__(item)
 
-    async def send(self, context, message, **kwargs):
+    async def send(self, context: Dict[str, Any],
+                   message: Union[str, Dict[str, Any], List[Dict[str, Any]]],
+                   **kwargs) -> Optional[Dict[str, Any]]:
         context = context.copy()
         context['message'] = message
         context.update(kwargs)
