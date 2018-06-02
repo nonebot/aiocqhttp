@@ -37,6 +37,7 @@ class CQHttp:
                  access_token: Optional[str] = None,
                  secret: Optional[AnyStr] = None,
                  enable_http_post: bool = True):
+        self._access_token = access_token
         self._secret = secret
         self._handlers = defaultdict(dict)
         self._server_app = Quart(__name__)
@@ -75,7 +76,24 @@ class CQHttp:
         response = await self._handle_event_payload(payload)
         return jsonify(response) if isinstance(response, dict) else ''
 
+    def _validate_access_token(self):
+        if not self._access_token:
+            return
+
+        if websocket:
+            auth = websocket.headers.get('Authorization', '')
+            if not auth.startswith('Token ') and not auth.startswith('token '):
+                abort(401)
+
+            token_given = auth[len('Token '):].strip()
+            if not token_given:
+                abort(401)
+            if token_given != self._access_token:
+                abort(403)
+
     async def _handle_ws_reverse_event(self):
+        self._validate_access_token()
+
         try:
             while True:
                 try:
@@ -92,6 +110,8 @@ class CQHttp:
             pass
 
     async def _handle_ws_reverse_api(self):
+        self._validate_access_token()
+
         # noinspection PyProtectedMember
         ws = websocket._get_current_object()
         self_id = websocket.headers.get('X-Self-ID', '*')
