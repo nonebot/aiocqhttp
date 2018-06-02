@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional, AnyStr, Callable
 from quart import Quart, request, abort, jsonify, websocket
 
 from . import api
-from .api import HttpApi, WebSocketReverseApi, UnifiedApi
+from .api import HttpApi, WebSocketReverseApi, UnifiedApi, ResultStore
 
 ApiError = api.Error
 
@@ -44,7 +44,7 @@ class CQHttp:
 
         self._server_app.websocket('/ws/event/')(self._handle_ws_reverse_event)
         self._server_app.websocket('/ws/api/')(self._handle_ws_reverse_api)
-        self._connected_ws_reverse_api_clients = set()
+        self._connected_ws_reverse_api_clients = {}
 
         self.api = UnifiedApi(
             http_api=HttpApi(api_root, access_token),
@@ -93,12 +93,20 @@ class CQHttp:
     async def _handle_ws_reverse_api(self):
         # noinspection PyProtectedMember
         ws = websocket._get_current_object()
-        self._connected_ws_reverse_api_clients.add(ws)
+        self_id = websocket.headers.get('X-Self-ID', '*')
+        self._connected_ws_reverse_api_clients[self_id] = ws
         try:
             while True:
-                print(await websocket.receive())
+                try:
+                    ResultStore.add(json.loads(await websocket.receive()))
+                except json.JSONDecodeError:
+                    pass
         finally:
-            self._connected_ws_reverse_api_clients.remove(ws)
+            if self_id in self._connected_ws_reverse_api_clients:
+                # we must check the existence here,
+                # because we allow wildcard ws connections,
+                # that is, the self_id may be '*'
+                del self._connected_ws_reverse_api_clients[self_id]
 
     async def _handle_event_payload(self, payload: Dict[str, Any]):
         post_type = payload.get('post_type')

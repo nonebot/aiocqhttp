@@ -2,9 +2,11 @@ import json
 import abc
 import functools
 import sys
-from typing import Set, Callable, Dict, Any, Optional
+import asyncio
+from typing import Callable, Dict, Any, Optional
 
 import aiohttp
+from quart import websocket as event_ws
 from quart.wrappers.request import Websocket
 
 
@@ -61,26 +63,64 @@ class HttpApi(Api):
         return bool(self._api_root)
 
 
+class _SequenceGenerator:
+    _seq = 1
+
+    @classmethod
+    def next(cls) -> int:
+        s = cls._seq
+        cls._seq = (cls._seq + 1) % sys.maxsize
+        return s
+
+
+class ResultStore:
+    _futures = {}  # key: seq, value: asyncio.Future
+
+    @classmethod
+    def add(cls, result: Dict[str, Any]):
+        if isinstance(result.get('echo'), dict) and \
+                isinstance(result['echo'].get('seq'), int):
+            future = cls._futures.get(result['echo']['seq'])
+            if future:
+                future.set_result(result)
+
+    @classmethod
+    async def fetch(cls, seq: int) -> Dict[str, Any]:
+        future = asyncio.get_event_loop().create_future()
+        cls._futures[seq] = future
+        result = await future
+        del cls._futures[seq]
+        return result
+
+
 class WebSocketReverseApi(Api):
-    def __init__(self, connected_clients: Set[Websocket], *args, **kwargs):
+    def __init__(self, connected_clients: Dict[str, Websocket],
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._connected_clients = connected_clients
-        self._seq = 1
 
     async def call_action(self, action: str, **params) -> \
             Optional[Dict[str, Any]]:
-        for ws in self._connected_clients:
-            await ws.send(json.dumps({
+        if not self._is_available():
+            return
+
+        api_ws = self._connected_clients.get(
+            event_ws.headers.get('X-Self-ID', '*'))
+        if api_ws:
+            seq = _SequenceGenerator.next()
+            await api_ws.send(json.dumps({
                 'action': action,
                 'params': params,
                 'echo': {
-                    'seq': self._seq
+                    'seq': seq
                 }
             }))
-        self._seq = (self._seq + 1) % sys.maxsize
+            return await ResultStore.fetch(seq)
 
     def _is_available(self) -> bool:
-        return bool(self._connected_clients)
+        # available only when current event ws has a corresponding api ws
+        return event_ws.headers.get(
+            'X-Self-ID', '*') in self._connected_clients
 
 
 class UnifiedApi(Api):
