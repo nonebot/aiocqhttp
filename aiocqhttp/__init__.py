@@ -1,40 +1,21 @@
 import hmac
 import json
+import functools
 from collections import defaultdict
-from functools import wraps
+from typing import Dict, Any, Optional, AnyStr, Callable
 
-import aiohttp
+from quart import Quart, request, abort, jsonify, websocket
 
-from quart import Quart, request, abort, jsonify
+from . import api
+from .api import HttpApi, WebSocketReverseApi, UnifiedApi
 
-
-class Error(Exception):
-    def __init__(self, status_code, retcode=None):
-        self.status_code = status_code
-        self.retcode = retcode
+ApiError = api.Error
 
 
-def _api_client(url, access_token=None):
-    async def do_call(**kwargs):
-        headers = {}
-        if access_token:
-            headers['Authorization'] = 'Token ' + access_token
-        async with aiohttp.request('POST', url,
-                                   json=kwargs, headers=headers) as resp:
-            if 200 <= resp.status < 300:
-                data = json.loads(await resp.text())
-                if data.get('status') == 'failed':
-                    raise Error(resp.status, data.get('retcode'))
-                return data.get('data')
-            raise Error(resp.status)
-
-    return do_call
-
-
-def _deco_maker(post_type):
+def _deco_maker(post_type: str):
     def deco_decorator(self, *types):
-        def decorator(func):
-            @wraps(func)
+        def decorator(func: Callable):
+            @functools.wraps(func)
             def wrapper(*args, **kwargs):
                 return func(*args, **kwargs)
 
@@ -51,19 +32,31 @@ def _deco_maker(post_type):
 
 
 class CQHttp:
-    def __init__(self, api_root=None, access_token=None, secret=None):
-        self._api_root = api_root.rstrip('/') if api_root else None
-        self._access_token = access_token
+    def __init__(self,
+                 api_root: Optional[str] = None,
+                 access_token: Optional[str] = None,
+                 secret: Optional[AnyStr] = None):
         self._secret = secret
         self._handlers = defaultdict(dict)
         self._server_app = Quart(__name__)
-        self._server_app.route('/', methods=['POST'])(self._handle)
+
+        self._server_app.route('/', methods=['POST'])(self._handle_http_event)
+
+        self._server_app.websocket('/ws/event/')(self._handle_ws_reverse_event)
+        self._server_app.websocket('/ws/api/')(self._handle_ws_reverse_api)
+        self._connected_ws_reverse_api_clients = set()
+
+        self.api = UnifiedApi(
+            http_api=HttpApi(api_root, access_token),
+            ws_reverse_api=WebSocketReverseApi(
+                self._connected_ws_reverse_api_clients)
+        )
 
     on_message = _deco_maker('message')
     on_notice = _deco_maker('notice')
     on_request = _deco_maker('request')
 
-    async def _handle(self):
+    async def _handle_http_event(self):
         if self._secret:
             if 'X-Signature' not in request.headers:
                 abort(401)
@@ -75,29 +68,56 @@ class CQHttp:
                 abort(403)
 
         payload = await request.json
-        post_type = payload.get('post_type')
+        if not isinstance(payload, dict):
+            abort(400)
 
+        response = await self._handle_event_payload(payload)
+        return jsonify(response) if isinstance(response, dict) else ''
+
+    async def _handle_ws_reverse_event(self):
+        try:
+            while True:
+                try:
+                    payload = json.loads(await websocket.receive())
+                except json.JSONDecodeError:
+                    payload = None
+
+                if not isinstance(payload, dict):
+                    # ignore invalid payload
+                    continue
+
+                await self._handle_event_payload(payload)
+        finally:
+            pass
+
+    async def _handle_ws_reverse_api(self):
+        # noinspection PyProtectedMember
+        ws = websocket._get_current_object()
+        self._connected_ws_reverse_api_clients.add(ws)
+        try:
+            while True:
+                print(await websocket.receive())
+        finally:
+            self._connected_ws_reverse_api_clients.remove(ws)
+
+    async def _handle_event_payload(self, payload: Dict[str, Any]):
+        post_type = payload.get('post_type')
         type_key = payload.get({'message': 'message_type',
                                 'notice': 'notice_type',
                                 'request': 'request_type'}.get(post_type))
-        if not type_key:
-            abort(400)
-
         handler = self._handlers[post_type].get(
             type_key, self._handlers[post_type].get('*'))
         if handler:
-            response = await handler(payload)
-            return jsonify(response) if isinstance(response, dict) else ''
+            return await handler(payload)
 
-    def run(self, host=None, port=None, **kwargs):
-        self._server_app.run(host=host, port=port, **kwargs)
+    def run(self, host=None, port=None, *args, **kwargs):
+        self._server_app.run(host=host, port=port, *args, **kwargs)
+
+    def __getattr__(self, item):
+        return self.api.__getattr__(item)
 
     async def send(self, context, message, **kwargs):
         context = context.copy()
         context['message'] = message
         context.update(kwargs)
         return await self.send_msg(**context)
-
-    def __getattr__(self, item):
-        if self._api_root:
-            return _api_client(self._api_root + '/' + item, self._access_token)

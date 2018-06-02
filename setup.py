@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 with open('README.md', 'r', encoding='utf-8') as f:
     long_description = f.read()
@@ -6,7 +6,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 setup(
     name='aiocqhttp',
     version='0.0.1',
-    packages=['aiocqhttp'],
+    packages=find_packages(include=('aiocqhttp', 'aiocqhttp.*')),
     url='https://github.com/richardchien/python-aiocqhttp',
     license='MIT License',
     author='Richard Chien',
