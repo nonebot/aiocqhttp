@@ -54,6 +54,10 @@ class CQHttp:
                               ws_reverse_api=WebSocketReverseApi(
                                   self._connected_ws_reverse_api_clients))
 
+    @property
+    def wsgi(self):
+        return self._server_app
+
     on_message = _deco_maker('message')
     on_notice = _deco_maker('notice')
     on_request = _deco_maker('request')

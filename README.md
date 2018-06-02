@@ -107,6 +107,10 @@ bot = CQHttp(access_token='your-token',
 
 后端运行了之后，需要配置 HTTP API 插件。对于 HTTP 事件上报，需要配置 `post_url` 为 `http://host:port/`；对于反向 WebSocket 事件上报和 API 调用，分别需要配置 `ws_reverse_event_url` 和 `ws_reverse_api_url` 为 `ws://host:port/ws/event/` 和 `ws://host:port/ws/api/`。其中 `host` 和 `port` 均为 `bot.run()` 运行时的相应参数。
 
+### 部署
+
+`bot.run()` 只适用于开发环境，不建议用于生产环境，因此 SDK 从 0.1.0 版本开始提供 `bot.wsgi` 属性以获取其内部兼容 WSGI 的 app 对象，从而可以使用 Gunicorn、uWSGI 等软件来部署。
+
 ## 遇到问题
 
 如果在使用本 SDK 时遇到任何问题，请 [提交 issue](https://github.com/richardchien/python-aiocqhttp/issues/new)。
