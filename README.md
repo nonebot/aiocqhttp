@@ -7,11 +7,13 @@
 
 关于 CoolQ HTTP API 插件，见 [richardchien/coolq-http-api](https://github.com/richardchien/coolq-http-api)；关于异步 I/O，见 [asyncio](https://docs.python.org/3/library/asyncio.html)。
 
+> **警告**：当前版本的 SDK 仍处于非常不稳定的开发阶段，请不要在生产环境使用，且任何接口都有可能随时发生变化。
+
 ## 用法
 
 首先安装 `aiocqhttp` 包：
 
-```sh
+```bash
 pip install aiocqhttp
 ```
 
@@ -21,8 +23,8 @@ pip install aiocqhttp
 
 然后新建 Python 文件，运行 CQHttp 后端：
 
-```py
-from cqhttp import CQHttp
+```python
+from aiocqhttp import CQHttp
 
 bot = CQHttp(api_root='http://127.0.0.1:5700/',
              access_token='your-token',
@@ -113,6 +115,27 @@ bot = CQHttp(access_token='your-token',
 
 ```bash
 gunicorn --worker-class quart.worker.GunicornWorker demo:bot.quart_app
+```
+
+### `message` 模块
+
+0.2.0 版本新增了 `message` 模块来更方便地操作消息，主要提供 `Message` 和 `MessageSegment` 类，使用方法如下：
+
+```python
+from aiocqhttp import CQHttp
+from aiocqhttp.message import Message, MessageSegment
+
+bot = CQHttp(message_class=Message)  # message_class 默认为 None，即保持上报时的原样
+
+
+@bot.on_message('group')
+async def handle(context):
+    # 如果设置了 message_class 参数，则这里断言就会成立
+    # 该参数不影响后面发送消息时对 Message 类的使用
+    assert isinstance(context['message'], Message)
+    
+    await bot.send(context, Message('你好！') + MessageSegment.at(context['user_id']))
+    await bot.send(context, Message('你刚刚发了：') + context['message'].extract_plain_text())
 ```
 
 ## 遇到问题
