@@ -36,7 +36,8 @@ class CQHttp:
                  api_root: Optional[str] = None,
                  access_token: Optional[str] = None,
                  secret: Optional[AnyStr] = None,
-                 enable_http_post: bool = True):
+                 enable_http_post: bool = True,
+                 message_class: type = None):
         self._access_token = access_token
         self._secret = secret
         self._handlers = defaultdict(dict)
@@ -50,9 +51,11 @@ class CQHttp:
         self._server_app.websocket('/ws/api/')(self._handle_ws_reverse_api)
         self._connected_ws_reverse_api_clients = {}
 
-        self.api = UnifiedApi(http_api=HttpApi(api_root, access_token),
-                              ws_reverse_api=WebSocketReverseApi(
-                                  self._connected_ws_reverse_api_clients))
+        self._api = UnifiedApi(http_api=HttpApi(api_root, access_token),
+                               ws_reverse_api=WebSocketReverseApi(
+                                   self._connected_ws_reverse_api_clients))
+
+        self._message_class = message_class
 
     @property
     def quart_app(self):
@@ -141,13 +144,16 @@ class CQHttp:
         handler = self._handlers[post_type].get(
             type_key, self._handlers[post_type].get('*'))
         if handler:
-            return await handler(payload)
+            context = payload.copy()
+            if self._message_class and 'message' in context:
+                context['message'] = self._message_class(context['message'])
+            return await handler(context)
 
     def run(self, host=None, port=None, *args, **kwargs):
         self._server_app.run(host=host, port=port, *args, **kwargs)
 
     def __getattr__(self, item) -> Callable:
-        return self.api.__getattr__(item)
+        return self._api.__getattr__(item)
 
     async def send(self, context: Dict[str, Any],
                    message: Union[str, Dict[str, Any], List[Dict[str, Any]]],
