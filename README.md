@@ -109,7 +109,11 @@ bot = CQHttp(access_token='your-token',
 
 ### 部署
 
-`bot.run()` 只适用于开发环境，不建议用于生产环境，因此 SDK 从 0.1.0 版本开始提供 `bot.wsgi` 属性以获取其内部兼容 WSGI 的 app 对象，从而可以使用 Gunicorn、uWSGI 等软件来部署。
+`bot.run()` 只适用于开发环境，不建议用于生产环境，因此 SDK 从 0.1.1 版本开始提供 `bot.quart_app` 属性以获取其内部的 [`Quart`](https://pgjones.gitlab.io/quart/) 实例，从而可以 [使用 Gunicorn 来部署](https://pgjones.gitlab.io/quart/deployment.html)，例如：
+
+```bash
+gunicorn --worker-class quart.worker.GunicornWorker demo:bot.quart_app
+```
 
 ## 遇到问题
 

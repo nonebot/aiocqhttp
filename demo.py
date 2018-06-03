@@ -1,4 +1,4 @@
-from aiocqhttp import CQHttp, Error
+from aiocqhttp import CQHttp, ApiError
 
 bot = CQHttp(api_root='http://127.0.0.1:5700/',
              access_token='123',
@@ -10,7 +10,7 @@ async def handle_msg(context):
     # 下面这句等价于 bot.send_private_msg(user_id=context['user_id'], message='你好呀，下面一条是你刚刚发的：')
     try:
         await bot.send(context, '你好呀，下面一条是你刚刚发的：')
-    except Error:
+    except ApiError:
         pass
     return {'reply': context['message'],
             'at_sender': False}  # 返回给 HTTP API 插件，走快速回复途径

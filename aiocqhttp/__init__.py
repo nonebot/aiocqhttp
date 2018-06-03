@@ -55,7 +55,7 @@ class CQHttp:
                                   self._connected_ws_reverse_api_clients))
 
     @property
-    def wsgi(self):
+    def quart_app(self):
         return self._server_app
 
     on_message = _deco_maker('message')
