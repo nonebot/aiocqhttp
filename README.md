@@ -99,7 +99,7 @@ bot = CQHttp(access_token='your-token',
 
 为了简化发送消息的操作，提供了 `send(context, message)` 函数，这里的第一个参数 `context` 也就是上报数据，传入之后函数会自己判断当前需要发送到哪里（哪个好友，或哪个群），无需手动再指定，其它参数仍然可以从 keyword argument 指定，例如 `auto_escape=True`。
 
-每个 API 调用最后都会由 `aiohttp` 库来发出请求，如果网络无法连接或连接出现错误，它可能会抛出 `aiohttp.ClientConnectorError` 等异常，见 [Client exceptions](https://docs.aiohttp.org/en/stable/client_reference.html#client-exceptions)。而一旦请求成功，本 SDK 会判断 HTTP 响应状态码，只有当状态码为 200，且 `status` 字段为 `ok` 或 `async` 时，会返回 `data` 字段的内容，否则抛出 `cqhttp.ApiError` 异常，在这个异常中你可以通过 `status_code` 和 `retcode` 属性来获取 HTTP 状态码和插件的 `retcode`（如果状态码不为 200，则 `retcode` 为 None），具体响应状态码和 `retcode` 的含义，见 [响应说明](https://richardchien.github.io/coolq-http-api/#/API?id=%E5%93%8D%E5%BA%94%E8%AF%B4%E6%98%8E)。
+调用 API 时，如果网络无法连接或连接出现错误，会抛出 `aiocqhttp.NetworkError` 异常。而一旦请求成功，SDK 会判断 HTTP 响应状态码是否为 2xx，如果不是，则抛出 `aiocqhttp.HttpFailed` 异常，在这个异常中可通过 `status_code` 获取 HTTP 响应状态码；如果是 2xx，则进一步查看响应 JSON 的 `status` 字段，如果 `status` 字段为 `faild`，则抛出 `aiocqhttp.ActionFailed` 异常，在这个异常中可通过 `retcode` 获取 API 调用的返回码。以上各异常全都继承自 `aiocqhttp.Error`。具体 HTTP 响应状态码和 `retcode` 的含义，见 [响应说明](https://richardchien.github.io/coolq-http-api/#/API?id=%E5%93%8D%E5%BA%94%E8%AF%B4%E6%98%8E)。
 
 如果 `api_root` 和已连接的反向 WebSocket 客户端**都不可用**，则调用会返回 `None`。
 
@@ -119,7 +119,7 @@ gunicorn --worker-class quart.worker.GunicornWorker demo:bot.quart_app
 
 ### `message` 模块
 
-0.2.0 版本新增了 `message` 模块来更方便地操作消息，主要提供 `Message` 和 `MessageSegment` 类，使用方法如下：
+可使用 `message` 模块来更方便地操作消息，主要提供 `Message` 和 `MessageSegment` 类，使用方法如下：
 
 ```python
 from aiocqhttp import CQHttp

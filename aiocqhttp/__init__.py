@@ -8,8 +8,7 @@ from quart import Quart, request, abort, jsonify, websocket
 
 from . import api
 from .api import HttpApi, WebSocketReverseApi, UnifiedApi, ResultStore
-
-ApiError = api.Error
+from .exceptions import *
 
 
 def _deco_maker(post_type: str):
