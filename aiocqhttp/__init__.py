@@ -1,33 +1,30 @@
 import hmac
 import json
-import functools
-from collections import defaultdict
 from typing import Dict, Any, Optional, AnyStr, Callable, Union, List
 
 from quart import Quart, request, abort, jsonify, websocket
 
-from . import api
+from .bus import EventBus
 from .api import HttpApi, WebSocketReverseApi, UnifiedApi, ResultStore
 from .exceptions import *
 
 
-def _deco_maker(post_type: str):
-    def deco_decorator(self, *types):
-        def decorator(func: Callable):
-            @functools.wraps(func)
-            def wrapper(*args, **kwargs):
-                return func(*args, **kwargs)
-
-            if types:
-                for t in types:
-                    self._handlers[post_type][t] = wrapper
+def _deco_maker(post_type: str) -> Callable:
+    def deco_deco(self, arg: Optional[Union[str, Callable]] = None,
+                  *events: str) -> Callable:
+        def deco(func: Callable) -> Callable:
+            if isinstance(arg, str):
+                e = [post_type + '.' + e for e in [arg] + list(events)]
+                self.on(*e)(func)
             else:
-                self._handlers[post_type]['*'] = wrapper
-            return wrapper
+                self.on(post_type)(func)
+            return func
 
-        return decorator
+        if isinstance(arg, Callable):
+            return deco(arg)
+        return deco
 
-    return deco_decorator
+    return deco_deco
 
 
 class CQHttp:
@@ -39,7 +36,7 @@ class CQHttp:
                  message_class: type = None):
         self._access_token = access_token
         self._secret = secret
-        self._handlers = defaultdict(dict)
+        self._bus = EventBus()
         self._server_app = Quart(__name__)
 
         if enable_http_post:
@@ -59,6 +56,24 @@ class CQHttp:
     @property
     def quart_app(self):
         return self._server_app
+
+    @property
+    def logger(self):
+        return self.quart_app.logger
+
+    def subscribe(self, event: str, func: Callable) -> None:
+        self._bus.subscribe(event, func)
+
+    def unsubscribe(self, event: str, func: Callable) -> None:
+        self._bus.unsubscribe(event, func)
+
+    def on(self, *events: str) -> Callable:
+        def deco(func: Callable) -> Callable:
+            for event in events:
+                self.subscribe(event, func)
+            return func
+
+        return deco
 
     on_message = _deco_maker('message')
     on_notice = _deco_maker('notice')
@@ -137,16 +152,20 @@ class CQHttp:
 
     async def _handle_event_payload(self, payload: Dict[str, Any]):
         post_type = payload.get('post_type')
-        type_key = payload.get({'message': 'message_type',
-                                'notice': 'notice_type',
-                                'request': 'request_type'}.get(post_type))
-        handler = self._handlers[post_type].get(
-            type_key, self._handlers[post_type].get('*'))
-        if handler:
-            context = payload.copy()
-            if self._message_class and 'message' in context:
-                context['message'] = self._message_class(context['message'])
-            return await handler(context)
+        detailed_type = payload.get({'message': 'message_type',
+                                     'notice': 'notice_type',
+                                     'request': 'request_type'}.get(post_type))
+        if not post_type or not detailed_type:
+            return
+
+        event = post_type + '.' + detailed_type
+        if payload.get('sub_type'):
+            event += '.' + payload['sub_type']
+
+        context = payload.copy()
+        if self._message_class and 'message' in context:
+            context['message'] = self._message_class(context['message'])
+        await self._bus.emit(event, context)
 
     def run(self, host=None, port=None, *args, **kwargs):
         self._server_app.run(host=host, port=port, *args, **kwargs)

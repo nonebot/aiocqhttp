@@ -5,7 +5,8 @@ bot = CQHttp(api_root='http://127.0.0.1:5700/',
              secret='abc')
 
 
-@bot.on_message()
+@bot.on_message
+# 上面这句等价于 @bot.on('message')
 async def handle_msg(context):
     # 下面这句等价于 bot.send_private_msg(user_id=context['user_id'], message='你好呀，下面一条是你刚刚发的：')
     try:
@@ -17,6 +18,7 @@ async def handle_msg(context):
 
 
 @bot.on_notice('group_increase')
+# 上面这句等价于 @bot.on('notice.group_increase')
 async def handle_group_increase(context):
     info = await bot.get_group_member_info(group_id=context['group_id'],
                                            user_id=context['user_id'])
@@ -25,7 +27,8 @@ async def handle_group_increase(context):
     await bot.send(context, message='欢迎{}～'.format(name))
 
 
-@bot.on_request('group')
+@bot.on_request('group', 'friend')
+# 上面这句等价于 @bot.on('request.group', 'request.friend')
 async def handle_group_request(context):
     if context['message'] != 'some-secret':
         # 验证信息不符，拒绝
