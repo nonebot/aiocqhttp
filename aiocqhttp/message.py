@@ -112,7 +112,7 @@ class MessageSegment(dict):
     @staticmethod
     def anonymous(ignore_failure: bool = False):
         return MessageSegment(type='anonymous',
-                              data={'ignore', _b2s(ignore_failure)})
+                              data={'ignore': _b2s(ignore_failure)})
 
     @staticmethod
     def share(url: str, title: str, content: str = '', image_url: str = ''):
@@ -165,12 +165,10 @@ class Message(list):
     def __init__(self, msg: Any = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         try:
-            if isinstance(msg, list):
-                self.extend(map(lambda d: MessageSegment(d), msg))
+            if isinstance(msg, (list, str)):
+                self.extend(msg)
             elif isinstance(msg, dict):
-                self.append(MessageSegment(msg))
-            elif isinstance(msg, str):
-                self.extend(self._split_iter(msg))
+                self.append(msg)
             return
         except:
             pass
@@ -209,7 +207,11 @@ class Message(list):
     def __add__(self, other: Any):
         result = Message(self)
         try:
-            if isinstance(other, list):
+            if isinstance(other, Message):
+                result.extend(other)
+            elif isinstance(other, MessageSegment):
+                result.append(other)
+            elif isinstance(other, list):
                 result.extend(map(lambda d: MessageSegment(d), other))
             elif isinstance(other, dict):
                 result.append(MessageSegment(other))
@@ -220,7 +222,59 @@ class Message(list):
             pass
         raise ValueError('the addend is not a valid message')
 
-    def extract_plain_text(self) -> str:
+    def append(self, obj: Any) -> None:
+        try:
+            if isinstance(obj, MessageSegment):
+                if len(self) > 0 and \
+                        self[-1].type == 'text' and obj.type == 'text':
+                    self[-1].data['text'] += obj.data['text']
+                else:
+                    super().append(obj)
+            else:
+                self.append(MessageSegment(obj))
+            return
+        except:
+            pass
+        raise ValueError('the object is not a valid message segment')
+
+    def extend(self, msg: Any) -> None:
+        try:
+            if isinstance(msg, str):
+                msg = self._split_iter(msg)
+
+            for seg in msg:
+                self.append(seg)
+            return
+        except:
+            pass
+        raise ValueError('the object is not a valid message')
+
+    def reduce(self) -> None:
+        """
+        Remove redundant segments.
+
+        Since this class is implemented based on list,
+        this method may require O(n) time.
+        """
+        idx = 0
+        while idx < len(self):
+            if idx > 0 and \
+                    self[idx - 1].type == 'text' and self[idx].type == 'text':
+                self[idx - 1].data['text'] += self[idx].data['text']
+                del self[idx]
+            else:
+                idx += 1
+
+    def extract_plain_text(self, reduce: bool = False) -> str:
+        """
+        Extract text segments from the message, joined by single space.
+
+        :param reduce: reduce the message before extracting
+        :return: the joined string
+        """
+        if reduce:
+            self.reduce()
+
         result = ''
         for seg in self:
             if seg.type == 'text':
