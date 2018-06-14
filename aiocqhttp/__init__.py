@@ -1,5 +1,6 @@
 import hmac
 import json
+import logging
 from typing import Dict, Any, Optional, AnyStr, Callable, Union, List
 
 from quart import Quart, request, abort, jsonify, websocket
@@ -33,7 +34,8 @@ class CQHttp:
                  access_token: Optional[str] = None,
                  secret: Optional[AnyStr] = None,
                  enable_http_post: bool = True,
-                 message_class: type = None):
+                 message_class: type = None,
+                 *args, **kwargs):
         self._access_token = access_token
         self._secret = secret
         self._bus = EventBus()
@@ -54,11 +56,11 @@ class CQHttp:
         self._message_class = message_class
 
     @property
-    def quart_app(self):
+    def asgi(self) -> Quart:
         return self._server_app
 
     @property
-    def logger(self):
+    def logger(self) -> logging.Logger:
         return self.quart_app.logger
 
     def subscribe(self, event: str, func: Callable) -> None:

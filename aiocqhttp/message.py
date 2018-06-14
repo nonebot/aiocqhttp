@@ -72,6 +72,11 @@ class MessageSegment(dict):
             params = ',' + params
         return '[CQ:{type}{params}]'.format(type=self.type, params=params)
 
+    def __eq__(self, other):
+        if not isinstance(other, MessageSegment):
+            return False
+        return self.type == other.type and self.data == other.data
+
     @staticmethod
     def text(text: str):
         return MessageSegment(type='text', data={'text': text})
@@ -225,10 +230,9 @@ class Message(list):
     def append(self, obj: Any) -> None:
         try:
             if isinstance(obj, MessageSegment):
-                if len(self) > 0 and \
-                        self[-1].type == 'text' and obj.type == 'text':
+                if self and self[-1].type == 'text' and obj.type == 'text':
                     self[-1].data['text'] += obj.data['text']
-                else:
+                elif obj.type != 'text' or obj.data['text'] or not self:
                     super().append(obj)
             else:
                 self.append(MessageSegment(obj))
