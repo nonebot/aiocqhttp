@@ -25,15 +25,6 @@ class Api:
         """Send API request to call the specified action."""
         pass
 
-    @abc.abstractmethod
-    def _is_available(self) -> bool:
-        pass
-
-    @property
-    def is_available(self) -> bool:
-        """The API instance is available now."""
-        return self._is_available()
-
 
 def _handle_api_result(result: Optional[Dict[str, Any]]) -> Any:
     """
@@ -61,7 +52,7 @@ class HttpApi(Api):
     async def call_action(self, action: str, **params) -> \
             Optional[Dict[str, Any]]:
         if not self._is_available():
-            return
+            return None
 
         headers = {}
         if self._access_token:
@@ -128,21 +119,25 @@ class WebSocketReverseApi(Api):
 
     async def call_action(self, action: str, **params) -> \
             Optional[Dict[str, Any]]:
-        if not self._is_available():
-            return
+        api_ws = None
+        if self._is_available():
+            api_ws = self._connected_clients.get(
+                event_ws.headers.get('X-Self-ID', '*'))
+        elif params.get('self_id'):
+            api_ws = self._connected_clients.get(str(params['self_id']))
 
-        api_ws = self._connected_clients.get(
-            event_ws.headers.get('X-Self-ID', '*'))
-        if api_ws:
-            seq = _SequenceGenerator.next()
-            await api_ws.send(json.dumps({
-                'action': action,
-                'params': params,
-                'echo': {
-                    'seq': seq
-                }
-            }))
-            return _handle_api_result(await ResultStore.fetch(seq))
+        if not api_ws:
+            return None
+
+        seq = _SequenceGenerator.next()
+        await api_ws.send(json.dumps({
+            'action': action,
+            'params': params,
+            'echo': {
+                'seq': seq
+            }
+        }))
+        return _handle_api_result(await ResultStore.fetch(seq))
 
     def _is_available(self) -> bool:
         # available only when current event ws has a corresponding api ws
@@ -166,12 +161,10 @@ class UnifiedApi(Api):
 
     async def call_action(self, action: str, **params) -> \
             Optional[Dict[str, Any]]:
-        if self._ws_reverse_api and self._ws_reverse_api.is_available:
+        result = None
+        if self._ws_reverse_api:
             # WebSocket is preferred
-            return await self._ws_reverse_api.call_action(action, **params)
-        elif self._http_api and self._http_api.is_available:
-            return await self._http_api.call_action(action, **params)
-
-    def _is_available(self) -> bool:
-        return self._ws_reverse_api and self._ws_reverse_api.is_available or \
-               self._http_api and self._http_api.is_available
+            result = await self._ws_reverse_api.call_action(action, **params)
+        if not result and self._http_api:
+            result = await self._http_api.call_action(action, **params)
+        return result
