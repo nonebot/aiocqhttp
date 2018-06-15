@@ -177,27 +177,8 @@ class CQHttp:
 
     async def send(self, context: Dict[str, Any],
                    message: Union[str, Dict[str, Any], List[Dict[str, Any]]],
-                   *, at_sender: bool = True,
                    **kwargs) -> Optional[Dict[str, Any]]:
         context = context.copy()
-
-        if context.get('message_type') in ('group', 'discuss') and \
-                not context.get('anonymous') and \
-                context.get('user_id') and \
-                at_sender:
-            # is a group or discuss message, and the sender is not anonymous
-            # and the caller want to @sender
-            user_id = str(context['user_id'])
-            if isinstance(message, str):
-                message = '[CQ:at,qq={}] '.format(user_id) + message
-            elif isinstance(message, dict):
-                message = [{'type': 'at', 'data': {'qq': user_id}},
-                           {'type': 'text', 'data': {'text': ' '}},
-                           message]
-            elif isinstance(message, list):
-                message = [{'type': 'at', 'data': {'qq': user_id}},
-                           {'type': 'text', 'data': {'text': ' '}}] + message
-
         context['message'] = message
         context.update(kwargs)
         return await self.send_msg(**context)
