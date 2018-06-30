@@ -188,10 +188,11 @@ class Message(list):
                                       r'(?:,[a-zA-Z0-9-_.]+=?[^,\]]*)*'
                                       r'),?\]',
                                       msg_str):
-                yield 'text', msg_str[text_begin:cqcode.pos + cqcode.start()]
+                yield 'text', unescape(
+                    msg_str[text_begin:cqcode.pos + cqcode.start()])
                 text_begin = cqcode.pos + cqcode.end()
                 yield cqcode.group('type'), cqcode.group('params').lstrip(',')
-            yield 'text', msg_str[text_begin:]
+            yield 'text', unescape(msg_str[text_begin:])
 
         for function_name, extra in iter_function_name_and_extra():
             if function_name == 'text':
