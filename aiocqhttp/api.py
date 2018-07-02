@@ -49,8 +49,7 @@ class HttpApi(Api):
         self._api_root = api_root.rstrip('/') if api_root else None
         self._access_token = access_token
 
-    async def call_action(self, action: str, **params) -> \
-            Optional[Dict[str, Any]]:
+    async def call_action(self, action: str, **params) -> Any:
         if not self._is_available():
             raise ApiNotAvailable
 
@@ -117,8 +116,7 @@ class WebSocketReverseApi(Api):
         super().__init__(*args, **kwargs)
         self._connected_clients = connected_clients
 
-    async def call_action(self, action: str, **params) -> \
-            Optional[Dict[str, Any]]:
+    async def call_action(self, action: str, **params) -> Any:
         api_ws = None
         if self._is_available():
             api_ws = self._connected_clients.get(
@@ -159,8 +157,7 @@ class UnifiedApi(Api):
         self._http_api = http_api
         self._ws_reverse_api = ws_reverse_api
 
-    async def call_action(self, action: str, **params) -> \
-            Optional[Dict[str, Any]]:
+    async def call_action(self, action: str, **params) -> Any:
         result = None
         succeeded = False
 
