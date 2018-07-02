@@ -34,17 +34,17 @@ bot = CQHttp(api_root='http://127.0.0.1:5700/',
 @bot.on_message()
 async def handle_msg(context):
     await bot.send(context, '你好呀，下面一条是你刚刚发的：')
-    await bot.send(context, context['message'])
+    return {'reply': context['message']}
 
 
 @bot.on_notice('group_increase')
 async def handle_group_increase(context):
-    await bot.send(context, message='欢迎新人～', is_raw=True)  # 发送欢迎新人
+    await bot.send(context, message='欢迎新人～', is_raw=True)
 
 
 @bot.on_request('group', 'friend')
 async def handle_request(context):
-    pass
+    return {'approve': True}
 
 
 bot.run(host='127.0.0.1', port=8080)
@@ -89,7 +89,7 @@ bot = CQHttp(access_token='your-token',
 
 上面三个装饰器装饰的函数，统一接受一个参数，即为上报的数据，具体数据内容见 [事件上报](https://richardchien.github.io/coolq-http-api/#/Post)；返回值可以是一个字典，会被自动作为 JSON 响应返回给 HTTP API 插件，具体见 [上报请求的响应数据格式](https://richardchien.github.io/coolq-http-api/#/Post?id=%E4%B8%8A%E6%8A%A5%E8%AF%B7%E6%B1%82%E7%9A%84%E5%93%8D%E5%BA%94%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F)。
 
-无论使用 HTTP 和反向 WebSocket 方式来上报事件，都调用同样的事件处理函数，因此，如果插件同时配置了 `post_url` 和 `ws_reverse_event_url`，事件将会被处理两次。另外，对于 HTTP 上报，事件处理函数的返回值会被作为快速操作来返回给插件，例如 `return {'reply': context['message']}` 将会让插件把收到的消息重新发出去；反向 WebSocket 上报则会忽略处理函数的返回值。
+无论使用 HTTP 和反向 WebSocket 方式来上报事件，都调用同样的事件处理函数，因此，如果插件同时配置了 `post_url` 和 `ws_reverse_event_url`，事件将会被处理两次。另外，事件处理函数的返回值（如果同一个事件被多个处理函数处理了，则使用第一个非 None 返回值）会被作为快速操作来返回给插件，例如 `return {'reply': context['message']}` 将会让插件把收到的消息重新发出去。
 
 ### API 调用
 

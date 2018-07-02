@@ -61,7 +61,7 @@ class CQHttp:
 
     @property
     def logger(self) -> logging.Logger:
-        return self.quart_app.logger
+        return self._server_app.logger
 
     def subscribe(self, event: str, func: Callable) -> None:
         self._bus.subscribe(event, func)
@@ -128,7 +128,15 @@ class CQHttp:
                     # ignore invalid payload
                     continue
 
-                await self._handle_event_payload(payload)
+                response = await self._handle_event_payload(payload)
+                if isinstance(response, dict):
+                    try:
+                        await self._api.call_action(
+                            action='.handle_quick_operation',
+                            context=payload, operation=response
+                        )
+                    except Error:
+                        pass
         finally:
             pass
 
@@ -152,7 +160,7 @@ class CQHttp:
                 # that is, the self_id may be '*'
                 del self._connected_ws_reverse_api_clients[self_id]
 
-    async def _handle_event_payload(self, payload: Dict[str, Any]):
+    async def _handle_event_payload(self, payload: Dict[str, Any]) -> Any:
         post_type = payload.get('post_type')
         detailed_type = payload.get({'message': 'message_type',
                                      'notice': 'notice_type',
@@ -167,7 +175,10 @@ class CQHttp:
         context = payload.copy()
         if self._message_class and 'message' in context:
             context['message'] = self._message_class(context['message'])
-        await self._bus.emit(event, context)
+        results = list(filter(lambda r: r is not None,
+                              await self._bus.emit(event, context)))
+        # return the first non-none result
+        return results[0] if results else None
 
     def run(self, host=None, port=None, *args, **kwargs):
         self._server_app.run(host=host, port=port, *args, **kwargs)
