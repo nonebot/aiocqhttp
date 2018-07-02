@@ -2,11 +2,11 @@ class Error(Exception):
     pass
 
 
-class ApiError(Error, RuntimeError):
+class ApiNotAvailable(Error):
     pass
 
 
-class ApiNotAvailable(ApiError):
+class ApiError(Error, RuntimeError):
     pass
 
 
