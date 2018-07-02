@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/pypi/l/aiocqhttp.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/aiocqhttp.svg)](https://pypi.python.org/pypi/aiocqhttp)
 
-本项目为酷 Q 的 CoolQ HTTP API 插件的新一代 Python SDK，采用异步 I/O，封装了 web server 相关的代码，支持 HTTP API 插件的 HTTP 和反向 WebSocket 两种通信方式，让使用 Python 的开发者能方便地开发插件。仅支持 Python 3.6+ 及插件 v4.x，如果你使用 v3.x 或更旧版本，请使用 [`cqhttp`](https://github.com/richardchien/python-cqhttp)。
+本项目为酷 Q 的 CoolQ HTTP API 插件的新一代 Python SDK，采用异步 I/O，封装了 web server 相关的代码，支持 HTTP API 插件的 HTTP 和反向 WebSocket 两种通信方式，让使用 Python 的开发者能方便地开发插件。仅支持 Python 3.6+ 及插件 v4.2+，如果你使用较旧版本，请使用 [`cqhttp`](https://github.com/richardchien/python-cqhttp)。
 
 关于 CoolQ HTTP API 插件，见 [richardchien/coolq-http-api](https://github.com/richardchien/coolq-http-api)；关于异步 I/O，见 [asyncio](https://docs.python.org/3/library/asyncio.html)。
 
