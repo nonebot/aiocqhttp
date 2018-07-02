@@ -52,7 +52,7 @@ class HttpApi(Api):
     async def call_action(self, action: str, **params) -> \
             Optional[Dict[str, Any]]:
         if not self._is_available():
-            return None
+            raise ApiNotAvailable
 
         headers = {}
         if self._access_token:
@@ -127,7 +127,7 @@ class WebSocketReverseApi(Api):
             api_ws = self._connected_clients.get(str(params['self_id']))
 
         if not api_ws:
-            return None
+            raise ApiNotAvailable
 
         seq = _SequenceGenerator.next()
         await api_ws.send(json.dumps({
@@ -162,9 +162,25 @@ class UnifiedApi(Api):
     async def call_action(self, action: str, **params) -> \
             Optional[Dict[str, Any]]:
         result = None
+        succeeded = False
+
         if self._ws_reverse_api:
             # WebSocket is preferred
-            result = await self._ws_reverse_api.call_action(action, **params)
-        if not result and self._http_api:
-            result = await self._http_api.call_action(action, **params)
+            try:
+                result = await self._ws_reverse_api.call_action(
+                    action, **params)
+                succeeded = True
+            except ApiNotAvailable:
+                pass
+
+        if not succeeded and self._http_api:
+            try:
+                result = await self._http_api.call_action(
+                    action, **params)
+                succeeded = True
+            except ApiNotAvailable:
+                pass
+
+        if not succeeded:
+            raise ApiNotAvailable
         return result

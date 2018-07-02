@@ -6,6 +6,10 @@ class ApiError(Error, RuntimeError):
     pass
 
 
+class ApiNotAvailable(ApiError):
+    pass
+
+
 class HttpFailed(ApiError):
     """HTTP status code is not 2xx."""
 

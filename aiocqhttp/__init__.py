@@ -132,7 +132,7 @@ class CQHttp:
                 if isinstance(response, dict):
                     try:
                         await self._api.call_action(
-                            action='.handle_quick_operation',
+                            action='.handle_quick_operation_async',
                             context=payload, operation=response
                         )
                     except Error:
