@@ -183,6 +183,9 @@ class CQHttp:
     def run(self, host=None, port=None, *args, **kwargs):
         self._server_app.run(host=host, port=port, *args, **kwargs)
 
+    async def call_action(self, action: str, **params) -> Any:
+        return await self._api.call_action(action=action, **params)
+
     def __getattr__(self, item) -> Callable:
         return self._api.__getattr__(item)
 
