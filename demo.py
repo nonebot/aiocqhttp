@@ -5,6 +5,9 @@ bot = CQHttp(api_root='http://127.0.0.1:5700/',
              secret='abc')
 
 
+# 注意：下面示例代码中的「快速回复途径」暂时不可用
+
+
 @bot.on_message
 # 上面这句等价于 @bot.on('message')
 async def handle_msg(context):
