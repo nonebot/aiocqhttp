@@ -9,7 +9,7 @@
 
 > **警告**：当前版本的 SDK 仍处于非常不稳定的开发阶段，请不要在生产环境使用，且任何接口都有可能随时发生变化。
 
-## 用法
+## 基本用法
 
 首先安装 `aiocqhttp` 包：
 
@@ -87,7 +87,7 @@ bot = CQHttp(access_token='your-token',
 
 `CQHttp` 类的实例的 `on_message`、`on_notice`、`on_request` 三个装饰器分别对应三个上报类型（`post_type`），括号中指出要处理的消息类型（`message_type`）、通知类型（`notice_type`）、请求类型（`request_type`），一次可指定多个，如果留空，则会处理所有这个上报类型的上报。在上面的例子中 `handle_msg` 函数将会在收到任意渠道的消息时被调用，`handle_group_increase` 函数会在群成员增加时调用。
 
-上面三个装饰器装饰的函数，统一接受一个参数，即为上报的数据，具体数据内容见 [事件上报](https://richardchien.github.io/coolq-http-api/#/Post)；返回值可以是一个字典，会被自动作为 JSON 响应返回给 HTTP API 插件，具体见 [上报请求的响应数据格式](https://richardchien.github.io/coolq-http-api/#/Post?id=%E4%B8%8A%E6%8A%A5%E8%AF%B7%E6%B1%82%E7%9A%84%E5%93%8D%E5%BA%94%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F)。
+上面三个装饰器装饰的函数，统一接受一个参数，即为上报的数据，具体数据内容见 [事件上报](https://cqhttp.cc/docs/#/Post)；函数可以不返回值，也可以返回一个字典，会被自动作为快速操作提供给 HTTP API 插件执行（如果使用 WebSocket，则要求插件版本在 4.2 以上），例如 `return {'reply': context['message']}` 将会让插件把收到的消息重新发出去，具体见 [上报请求的响应数据格式](https://cqhttp.cc/docs/#/Post?id=%E4%B8%8A%E6%8A%A5%E8%AF%B7%E6%B1%82%E7%9A%84%E5%93%8D%E5%BA%94%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F)。
 
 无论使用 HTTP 和反向 WebSocket 方式来上报事件，都调用同样的事件处理函数，因此，如果插件同时配置了 `post_url` 和 `ws_reverse_event_url`，事件将会被处理两次。
 
@@ -97,13 +97,11 @@ bot = CQHttp(access_token='your-token',
 
 创建实例时传入的 `api_root` 和当前已连接到反向 WebSocket API 入口的客户端都会被用于 API 调用，**如果同时可用，则优先使用反向 WebSocket**。
 
-直接在 `CQHttp` 类的实例上就可以调用 API，例如 `bot.send_private_msg(user_id=123456, message='hello')`，这里的 `send_private_msg` 即为 [`/send_private_msg` 发送私聊消息](https://richardchien.github.io/coolq-http-api/#/API?id=send_private_msg-%E5%8F%91%E9%80%81%E7%A7%81%E8%81%8A%E6%B6%88%E6%81%AF) 中的 `/send_private_msg`，**API 所需参数直接通过命名参数（keyword argument）传入**。其它 API 见 [API 描述](https://richardchien.github.io/coolq-http-api/#/API)。
+直接在 `CQHttp` 类的实例上就可以调用 API，例如 `bot.send_private_msg(user_id=123456, message='hello')`，这里的 `send_private_msg` 即为 [`/send_private_msg` 发送私聊消息](https://cqhttp.cc/docs/#/API?id=send_private_msg-%E5%8F%91%E9%80%81%E7%A7%81%E8%81%8A%E6%B6%88%E6%81%AF) 中的 `/send_private_msg`，**API 所需参数直接通过命名参数（keyword argument）传入**。其它 API 见 [API 列表](https://cqhttp.cc/docs/#/API?id=api-列表)。
 
 为了简化发送消息的操作，提供了 `send(context, message)` 函数，这里的第一个参数 `context` 也就是上报数据，传入之后函数会自己判断当前需要发送到哪里（哪个好友，或哪个群），无需手动再指定，其它参数仍然可以从 keyword argument 指定，例如 `auto_escape=True`。
 
-调用 API 时，如果 API 当前不可用（例如没有任何连接了的 WebSocket、或未配置 API root），则抛出 `aiocqhttp.ApiNotAvailable`；如果 API 可用，但网络无法连接或连接出现错误，会抛出 `aiocqhttp.NetworkError` 异常。而一旦请求成功，SDK 会判断 HTTP 响应状态码是否为 2xx，如果不是，则抛出 `aiocqhttp.HttpFailed` 异常，在这个异常中可通过 `status_code` 获取 HTTP 响应状态码；如果是 2xx，则进一步查看响应 JSON 的 `status` 字段，如果 `status` 字段为 `faild`，则抛出 `aiocqhttp.ActionFailed` 异常，在这个异常中可通过 `retcode` 获取 API 调用的返回码。以上各异常全都继承自 `aiocqhttp.Error`。具体 HTTP 响应状态码和 `retcode` 的含义，见 [响应说明](https://richardchien.github.io/coolq-http-api/#/API?id=%E5%93%8D%E5%BA%94%E8%AF%B4%E6%98%8E)。
-
-如果 `api_root` 和已连接的反向 WebSocket 客户端**都不可用**，则调用会返回 `None`。
+调用 API 时，如果 API 当前不可用（例如没有任何连接了的 WebSocket、或未配置 API root），则抛出 `aiocqhttp.ApiNotAvailable`；如果 API 可用，但网络无法连接或连接出现错误，会抛出 `aiocqhttp.NetworkError` 异常。而一旦请求成功，SDK 会判断 HTTP 响应状态码是否为 2xx，如果不是，则抛出 `aiocqhttp.HttpFailed` 异常，在这个异常中可通过 `status_code` 获取 HTTP 响应状态码；如果是 2xx，则进一步查看响应 JSON 的 `status` 字段，如果 `status` 字段为 `faild`，则抛出 `aiocqhttp.ActionFailed` 异常，在这个异常中可通过 `retcode` 获取 API 调用的返回码。以上各异常全都继承自 `aiocqhttp.Error`。**如果调用成功，则不抛出异常，函数返回插件响应数据的 `data` 字段（有可能为 None）**。具体 HTTP 响应状态码和 `retcode` 的含义，见 [响应说明](https://cqhttp.cc/docs/#/API?id=%E5%93%8D%E5%BA%94%E8%AF%B4%E6%98%8E)。
 
 ### 运行实例
 
@@ -111,13 +109,19 @@ bot = CQHttp(access_token='your-token',
 
 后端运行了之后，需要配置 HTTP API 插件。对于 HTTP 事件上报，需要配置 `post_url` 为 `http://host:port/`；对于反向 WebSocket 事件上报和 API 调用，分别需要配置 `ws_reverse_event_url` 和 `ws_reverse_api_url` 为 `ws://host:port/ws/event/` 和 `ws://host:port/ws/api/`。其中 `host` 和 `port` 均为 `bot.run()` 运行时的相应参数。
 
+## 高级用法
+
 ### 部署
 
-`bot.run()` 只适用于开发环境，不建议用于生产环境，因此 SDK 从 0.1.1 版本开始提供 `bot.quart_app` 属性以获取其内部的 [`Quart`](https://pgjones.gitlab.io/quart/) 实例，从而可以 [使用 Gunicorn 来部署](https://pgjones.gitlab.io/quart/deployment.html)，例如：
+`bot.run()` 只适用于开发环境，不建议用于生产环境，因此 SDK 提供 `bot.quart_app` 属性以获取其内部的 [`Quart`](https://pgjones.gitlab.io/quart/) 实例，从而可以 [使用 ASGI 服务器来部署](https://pgjones.gitlab.io/quart/deployment.html)，例如：
 
 ```bash
-gunicorn --worker-class quart.worker.GunicornWorker demo:bot.quart_app
+hypercorn demo:bot.quart_app
 ```
+
+### 日志
+
+通过 `bot.logger` 属性可以获取到 Quart 框架的 app logger，它是一个标准的 Python Logger，你可以根据自己的需求对其进行配置和使用。
 
 ### `message` 模块
 
