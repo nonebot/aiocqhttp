@@ -87,11 +87,9 @@ bot = CQHttp(access_token='your-token',
 
 `CQHttp` 类的实例的 `on_message`、`on_notice`、`on_request` 三个装饰器分别对应三个上报类型（`post_type`），括号中指出要处理的消息类型（`message_type`）、通知类型（`notice_type`）、请求类型（`request_type`），一次可指定多个，如果留空，则会处理所有这个上报类型的上报。在上面的例子中 `handle_msg` 函数将会在收到任意渠道的消息时被调用，`handle_group_increase` 函数会在群成员增加时调用。
 
-上面三个装饰器装饰的函数，统一接受一个参数，即为上报的数据，具体数据内容见 [事件上报](https://cqhttp.cc/docs/#/Post)；函数可以不返回值，也可以返回一个字典，会被自动作为快速操作提供给 HTTP API 插件执行（如果使用 WebSocket，则要求插件版本在 4.2 以上），例如 `return {'reply': context['message']}` 将会让插件把收到的消息重新发出去，具体见 [上报请求的响应数据格式](https://cqhttp.cc/docs/#/Post?id=%E4%B8%8A%E6%8A%A5%E8%AF%B7%E6%B1%82%E7%9A%84%E5%93%8D%E5%BA%94%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F)。
+上面三个装饰器装饰的函数，统一接受一个参数，即为上报的数据，具体数据内容见 [事件上报](https://cqhttp.cc/docs/#/Post)；函数可以不返回值，也可以返回一个字典，会被自动作为快速操作提供给 HTTP API 插件执行（要求插件版本在 4.2 以上），例如 `return {'reply': context['message']}` 将会让插件把收到的消息重新发出去，具体见 [上报请求的响应数据格式](https://cqhttp.cc/docs/#/Post?id=%E4%B8%8A%E6%8A%A5%E8%AF%B7%E6%B1%82%E7%9A%84%E5%93%8D%E5%BA%94%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F)。
 
 无论使用 HTTP 和反向 WebSocket 方式来上报事件，都调用同样的事件处理函数，因此，如果插件同时配置了 `post_url` 和 `ws_reverse_event_url`，事件将会被处理两次。
-
-另外，事件处理函数的返回值（如果同一个事件被多个处理函数处理了，则使用第一个非 None 返回值）会被作为快速操作来返回给插件，例如 `return {'reply': context['message']}` 将会让插件把收到的消息重新发出去。**注意，如果你的插件版本低于 4.2，则返回值不会被处理。**
 
 ### API 调用
 
