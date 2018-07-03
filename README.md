@@ -111,10 +111,10 @@ bot = CQHttp(access_token='your-token',
 
 ### 部署
 
-`bot.run()` 只适用于开发环境，不建议用于生产环境，因此 SDK 提供 `bot.quart_app` 属性以获取其内部的 [`Quart`](https://pgjones.gitlab.io/quart/) 实例，从而可以 [使用 ASGI 服务器来部署](https://pgjones.gitlab.io/quart/deployment.html)，例如：
+`bot.run()` 只适用于开发环境，不建议用于生产环境，因此 SDK 提供 `bot.asgi` 属性以获取其内部的 [`Quart`](https://pgjones.gitlab.io/quart/) 实例，从而可以 [使用 ASGI 服务器来部署](https://pgjones.gitlab.io/quart/deployment.html)，例如：
 
 ```bash
-hypercorn demo:bot.quart_app
+hypercorn demo:bot.asgi
 ```
 
 ### 日志
