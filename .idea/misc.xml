@@ -3,7 +3,7 @@
   <component name="FrameworkDetectionExcludesConfiguration">
     <type id="django" />
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_9" default="false" project-jdk-name="Python 3.6 virtualenv at ~/Projects/python-aiocqhttp/venv" project-jdk-type="Python SDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_9" default="false" project-jdk-name="Python 3.6 (python-aiocqhttp)" project-jdk-type="Python SDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
   <component name="PythonCompatibilityInspectionAdvertiser">
