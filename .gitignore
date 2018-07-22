@@ -167,4 +167,5 @@ venv.bak/
 
 # ----- Project -----
 
+.idea/deployment.xml
 dev.py
