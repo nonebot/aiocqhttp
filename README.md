@@ -7,8 +7,6 @@
 
 关于 CoolQ HTTP API 插件，见 [richardchien/coolq-http-api](https://github.com/richardchien/coolq-http-api)；关于异步 I/O，见 [asyncio](https://docs.python.org/3/library/asyncio.html)。
 
-> **警告**：当前版本的 SDK 仍处于非常不稳定的开发阶段，请不要在生产环境使用，且任何接口都有可能随时发生变化。
-
 ## 基本用法
 
 首先安装 `aiocqhttp` 包：
@@ -56,6 +54,19 @@ bot.run(host='127.0.0.1', port=8080)
 
 首先需要创建一个 `CQHttp` 类的实例。有三种可行的用法：
 
+#### 只使用反向 WebSocket
+
+不需要传入 `api_root`、`secret`，但如果插件中配置了 `access_token`，仍需要传入 `access_token`。除此之外，还需要设置 `enable_http_post` 为 `False`，以禁用 HTTP 上报的入口。
+
+这是最推荐的用法，因为相比 HTTP，反向 WebSocket 只在插件启动时建立连接，后续的事件上报和 API 调用全都走已经建立好的连接，可以大大提高响应速度，实际测试中有大约 1～2 倍的性能提升。
+
+示例：
+
+```python
+bot = CQHttp(access_token='your-token',
+             enable_http_post=False)
+```
+
 #### 只使用 HTTP
 
 传入 `api_root`，即为酷 Q HTTP API 插件的监听地址，如果你不需要调用 API，也可以不传入。访问令牌（`access_token`）和签名密钥（`secret`）也在这里传入，如果没有配置插件的 `access_token` 或 `secret` 项，则不传。
@@ -66,17 +77,6 @@ bot.run(host='127.0.0.1', port=8080)
 bot = CQHttp(api_root='http://127.0.0.1:5700/',
              access_token='your-token',
              secret='your-secret')
-```
-
-#### 只使用反向 WebSocket
-
-不需要传入 `api_root`、`secret`，但如果插件中配置了 `access_token`，仍需要传入 `access_token`。除此之外，还需要设置 `enable_http_post` 为 `False`，以禁用 HTTP 上报的入口。
-
-示例：
-
-```python
-bot = CQHttp(access_token='your-token',
-             enable_http_post=False)
 ```
 
 #### 混合使用 HTTP 和反向 WebSocket
