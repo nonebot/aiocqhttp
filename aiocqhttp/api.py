@@ -123,6 +123,8 @@ class WebSocketReverseApi(Api):
                 event_ws.headers.get('X-Self-ID', '*'))
         elif params.get('self_id'):
             api_ws = self._connected_clients.get(str(params['self_id']))
+        elif len(self._connected_clients) == 1:
+            api_ws = list(self._connected_clients.values())[0]
 
         if not api_ws:
             raise ApiNotAvailable
