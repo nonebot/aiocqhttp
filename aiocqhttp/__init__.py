@@ -45,6 +45,7 @@ class CQHttp:
             self._server_app.route('/', methods=['POST'])(
                 self._handle_http_event)
 
+        self._server_app.websocket('/ws/')(self._handle_ws_reverse)
         self._server_app.websocket('/ws/event/')(self._handle_ws_reverse_event)
         self._server_app.websocket('/ws/api/')(self._handle_ws_reverse_api)
         self._connected_ws_reverse_api_clients = {}
@@ -98,6 +99,13 @@ class CQHttp:
 
         response = await self._handle_event_payload(payload)
         return jsonify(response) if isinstance(response, dict) else ''
+
+    async def _handle_ws_reverse(self):
+        role = websocket.headers.get('X-Client-Role', '').lower()
+        if role == 'event':
+            await self._handle_ws_reverse_event()
+        elif role == 'api':
+            await self._handle_ws_reverse_api()
 
     def _validate_access_token(self):
         if not self._access_token:
