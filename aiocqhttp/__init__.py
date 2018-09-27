@@ -203,4 +203,11 @@ class CQHttp:
         context = context.copy()
         context['message'] = message
         context.update(kwargs)
+        if 'message_type' not in context:
+            if 'group_id' in context:
+                context['message_type'] = 'group'
+            elif 'discuss_id' in context:
+                context['message_type'] = 'discuss'
+            elif 'user_id' in context:
+                context['message_type'] = 'private'
         return await self.send_msg(**context)
