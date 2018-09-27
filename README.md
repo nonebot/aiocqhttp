@@ -41,7 +41,7 @@ async def handle_msg(context):
 
 @bot.on_notice('group_increase')
 async def handle_group_increase(context):
-    await bot.send(context, message='欢迎新人～', is_raw=True)
+    await bot.send(context, message='欢迎新人～', auto_escape=True)
 
 
 @bot.on_request('group', 'friend')
@@ -141,7 +141,7 @@ async def handle(context):
     # 如果设置了 message_class 参数，则这里断言就会成立
     # 该参数不影响后面发送消息时对 Message 类的使用
     assert isinstance(context['message'], Message)
-    
+
     await bot.send(context, Message('你好！') + MessageSegment.at(context['user_id']))
     await bot.send(context, Message('你刚刚发了：') + context['message'].extract_plain_text())
 ```
