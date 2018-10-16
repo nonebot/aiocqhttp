@@ -61,6 +61,10 @@ class CQHttp:
         return self._server_app
 
     @property
+    def server_app(self) -> Quart:
+        return self._server_app
+
+    @property
     def logger(self) -> logging.Logger:
         return self._server_app.logger
 
@@ -81,6 +85,7 @@ class CQHttp:
     on_message = _deco_maker('message')
     on_notice = _deco_maker('notice')
     on_request = _deco_maker('request')
+    on_meta_event = _deco_maker('meta_event')
 
     async def _handle_http_event(self):
         if self._secret:
@@ -170,9 +175,7 @@ class CQHttp:
 
     async def _handle_event_payload(self, payload: Dict[str, Any]) -> Any:
         post_type = payload.get('post_type')
-        detailed_type = payload.get({'message': 'message_type',
-                                     'notice': 'notice_type',
-                                     'request': 'request_type'}.get(post_type))
+        detailed_type = payload.get('{}_type'.format(post_type))
         if not post_type or not detailed_type:
             return
 

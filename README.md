@@ -1,6 +1,6 @@
 # CQHttp Python SDK with Asynchronous I/O
 
-[![License](https://img.shields.io/pypi/l/aiocqhttp.svg)](LICENSE)
+[![License](https://img.shields.io/github/license/richardchien/python-aiocqhttp.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/aiocqhttp.svg)](https://pypi.python.org/pypi/aiocqhttp)
 
 本项目为酷 Q 的 CoolQ HTTP API 插件的新一代 Python SDK，采用异步 I/O，封装了 web server 相关的代码，支持 HTTP API 插件的 HTTP 和反向 WebSocket 两种通信方式，让使用 Python 的开发者能方便地开发插件。仅支持 Python 3.6+ 及插件 v4.x，如果你使用较旧版本，请使用 [`python-cqhttp`](https://github.com/richardchien/python-cqhttp)。
@@ -89,9 +89,9 @@ bot = CQHttp(api_root='http://127.0.0.1:5700/',
 
 ### 事件处理
 
-`CQHttp` 类的实例的 `on_message`、`on_notice`、`on_request` 三个装饰器分别对应三个上报类型（`post_type`），括号中指出要处理的消息类型（`message_type`）、通知类型（`notice_type`）、请求类型（`request_type`），一次可指定多个，如果留空，则会处理所有这个上报类型的上报。在上面的例子中 `handle_msg` 函数将会在收到任意渠道的消息时被调用，`handle_group_increase` 函数会在群成员增加时调用。
+`CQHttp` 类的实例的 `on_message`、`on_notice`、`on_request`、`on_meta_event` 装饰器分别对应插件的四种上报类型（`post_type`），括号中指出要处理的消息类型（`message_type`）、通知类型（`notice_type`）、请求类型（`request_type`）、元事件类型（`meta_event_type`），一次可指定多个，如果留空，则会处理所有这个上报类型的上报。在上面的例子中 `handle_msg` 函数将会在收到任意渠道的消息时被调用，`handle_group_increase` 函数会在群成员增加时调用。
 
-上面三个装饰器装饰的函数，统一接受一个参数，即为上报的数据，具体数据内容见 [事件上报](https://cqhttp.cc/docs/#/Post)；函数可以不返回值，也可以返回一个字典，会被自动作为快速操作提供给 HTTP API 插件执行（要求插件版本在 4.2 以上），例如 `return {'reply': context['message']}` 将会让插件把收到的消息重新发出去，具体见 [上报请求的响应数据格式](https://cqhttp.cc/docs/#/Post?id=%E4%B8%8A%E6%8A%A5%E8%AF%B7%E6%B1%82%E7%9A%84%E5%93%8D%E5%BA%94%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F)。
+上面装饰器装饰的函数，统一接受一个参数，即为上报的数据，具体数据内容见 [事件上报](https://cqhttp.cc/docs/#/Post)；函数可以不返回值，也可以返回一个字典，会被自动作为快速操作提供给 HTTP API 插件执行（要求插件版本在 4.2 以上），例如 `return {'reply': context['message']}` 将会让插件把收到的消息重新发出去，具体见 [上报请求的响应数据格式](https://cqhttp.cc/docs/#/Post?id=%E4%B8%8A%E6%8A%A5%E8%AF%B7%E6%B1%82%E7%9A%84%E5%93%8D%E5%BA%94%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F)。
 
 无论使用 HTTP 和反向 WebSocket 方式来上报事件，都调用同样的事件处理函数，因此，如果插件同时配置了 `post_url` 和 `ws_reverse_event_url`，事件将会被处理两次。
 
@@ -115,15 +115,29 @@ bot = CQHttp(api_root='http://127.0.0.1:5700/',
 
 ### 部署
 
-`bot.run()` 只适用于开发环境，不建议用于生产环境，因此 SDK 提供 `bot.asgi` 属性以获取其内部的 [`Quart`](https://pgjones.gitlab.io/quart/) 实例，从而可以 [使用 ASGI 服务器来部署](https://pgjones.gitlab.io/quart/deployment.html)，例如：
+`bot.run()` 只适用于开发环境，不建议用于生产环境，因此 SDK 提供 `bot.asgi` 属性以获取其内部的 ASGI 实例，从而可以 [使用 ASGI 服务器来部署](https://pgjones.gitlab.io/quart/deployment.html)，例如：
 
 ```bash
 hypercorn demo:bot.asgi
 ```
 
+### 添加路由
+
+`CQHttp` 内部使用 [Quart](https://pgjones.gitlab.io/quart/) 来提供 web server，默认添加了 bot 所需的 `/` 和 `/ws/` 路由（`enable_http_post=False` 时只添加了 `/ws/`），如需添加其它路由，例如在 `/admin/` 提供管理面板访问，可以通过 `bot.server_app` 访问内部的 `Quart` 实例来做到：
+
+```python
+app = bot.server_app
+
+@app.route('/admin')
+async def admin():
+    return 'This is the admin page.'
+```
+
+目前 `bot.server_app` 和 `bot.asgi` 等价。
+
 ### 日志
 
-通过 `bot.logger` 属性可以获取到 Quart 框架的 app logger，它是一个标准的 Python Logger，你可以根据自己的需求对其进行配置和使用。
+通过 `bot.logger` 属性可以获取到 Quart 框架的 [app logger](https://pgjones.gitlab.io/quart/logging.html)，它是一个标准的 Python Logger，你可以根据自己的需求对其进行配置和使用。
 
 ### `message` 模块
 
@@ -145,6 +159,8 @@ async def handle(context):
     await bot.send(context, Message('你好！') + MessageSegment.at(context['user_id']))
     await bot.send(context, Message('你刚刚发了：') + context['message'].extract_plain_text())
 ```
+
+相关 API 文档见 [`MessageSegment`](https://none.rclab.tk/api.html#class-messagesegment) 和 [`Message`](https://none.rclab.tk/api.html#class-message)。
 
 ## 遇到问题
 
