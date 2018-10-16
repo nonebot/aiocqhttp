@@ -162,6 +162,10 @@ async def handle(context):
 
 相关 API 文档见 [`MessageSegment`](https://none.rclab.tk/api.html#class-messagesegment) 和 [`Message`](https://none.rclab.tk/api.html#class-message)。
 
+## 更新日志
+
+更新日志见 [CHANGELOG.md](CHANGELOG.md)。
+
 ## 遇到问题
 
 如果在使用本 SDK 时遇到任何问题，请 [提交 issue](https://github.com/richardchien/python-aiocqhttp/issues/new)。
