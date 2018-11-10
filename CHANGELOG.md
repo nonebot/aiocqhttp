@@ -1,5 +1,10 @@
 # 更新日志
 
+## v0.6.5
+
+- `MessageSegment` 类支持互相加法运算，运算结果为 `Message` 类
+- `Message` 类的 `append()` 和 `extend()` 方法现返回 `self`，以便链式调用
+
 ## v0.6.4
 
 - 支持插件 v4.5.0 的 `meta_event` 上报

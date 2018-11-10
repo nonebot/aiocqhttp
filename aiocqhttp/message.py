@@ -20,19 +20,19 @@ def unescape(s: str) -> str:
 
 def _b2s(b: bool):
     if b:
-        return '1'
+        return 'true'
     else:
-        return '0'
+        return 'false'
 
 
 class MessageSegment(dict):
     def __init__(self, d: Dict[str, Any] = None, *,
-                 type: str = None, data: Dict[str, str] = None):
+                 type_: str = None, data: Dict[str, str] = None):
         super().__init__()
         if isinstance(d, dict) and d.get('type'):
             self.update(d)
-        elif type:
-            self['type'] = type
+        elif type_:
+            self['type'] = type_
             self['data'] = data or {}
         else:
             raise ValueError('the "type" field cannot be None or empty')
@@ -77,51 +77,54 @@ class MessageSegment(dict):
             return False
         return self.type == other.type and self.data == other.data
 
+    def __add__(self, other: Any):
+        return Message(self).__add__(other)
+
     @staticmethod
     def text(text: str):
-        return MessageSegment(type='text', data={'text': text})
+        return MessageSegment(type_='text', data={'text': text})
 
     @staticmethod
     def emoji(id_: int):
-        return MessageSegment(type='emoji', data={'id': str(id_)})
+        return MessageSegment(type_='emoji', data={'id': str(id_)})
 
     @staticmethod
     def face(id_: int):
-        return MessageSegment(type='face', data={'id': str(id_)})
+        return MessageSegment(type_='face', data={'id': str(id_)})
 
     @staticmethod
     def image(file: str):
-        return MessageSegment(type='image', data={'file': file})
+        return MessageSegment(type_='image', data={'file': file})
 
     @staticmethod
     def record(file: str, magic: bool = False):
-        return MessageSegment(type='record',
+        return MessageSegment(type_='record',
                               data={'file': file, 'magic': _b2s(magic)})
 
     @staticmethod
     def at(user_id: int):
-        return MessageSegment(type='at', data={'qq': str(user_id)})
+        return MessageSegment(type_='at', data={'qq': str(user_id)})
 
     @staticmethod
     def rps():
-        return MessageSegment(type='rps')
+        return MessageSegment(type_='rps')
 
     @staticmethod
     def dice():
-        return MessageSegment(type='dice')
+        return MessageSegment(type_='dice')
 
     @staticmethod
     def shake():
-        return MessageSegment(type='shake')
+        return MessageSegment(type_='shake')
 
     @staticmethod
     def anonymous(ignore_failure: bool = False):
-        return MessageSegment(type='anonymous',
+        return MessageSegment(type_='anonymous',
                               data={'ignore': _b2s(ignore_failure)})
 
     @staticmethod
     def share(url: str, title: str, content: str = '', image_url: str = ''):
-        return MessageSegment(type='share', data={
+        return MessageSegment(type_='share', data={
             'url': url,
             'title': title,
             'content': content,
@@ -130,18 +133,18 @@ class MessageSegment(dict):
 
     @staticmethod
     def contact_user(id_: int):
-        return MessageSegment(type='contact',
+        return MessageSegment(type_='contact',
                               data={'type': 'qq', 'id': str(id_)})
 
     @staticmethod
     def contact_group(id_: int):
-        return MessageSegment(type='contact',
+        return MessageSegment(type_='contact',
                               data={'type': 'group', 'id': str(id_)})
 
     @staticmethod
     def location(latitude: float, longitude: float, title: str = '',
                  content: str = ''):
-        return MessageSegment(type='location', data={
+        return MessageSegment(type_='location', data={
             'lat': str(latitude),
             'lon': str(longitude),
             'title': title,
@@ -150,13 +153,13 @@ class MessageSegment(dict):
 
     @staticmethod
     def music(type_: str, id_: int):
-        return MessageSegment(type='music',
+        return MessageSegment(type_='music',
                               data={'type': type_, 'id': str(id_)})
 
     @staticmethod
     def music_custom(url: str, audio_url: str, title: str, content: str = '',
                      image_url: str = ''):
-        return MessageSegment(type='music', data={
+        return MessageSegment(type_='music', data={
             'type': 'custom',
             'url': url,
             'audio': audio_url,
@@ -198,14 +201,14 @@ class Message(list):
             if function_name == 'text':
                 if extra:
                     # only yield non-empty text segment
-                    yield MessageSegment(type=function_name,
+                    yield MessageSegment(type_=function_name,
                                          data={'text': extra})
             else:
                 data = {k: v for k, v in map(
                     lambda x: x.split('=', maxsplit=1),
                     filter(lambda x: x, (x.lstrip() for x in extra.split(',')))
                 )}
-                yield MessageSegment(type=function_name, data=data)
+                yield MessageSegment(type_=function_name, data=data)
 
     def __str__(self):
         return ''.join((str(seg) for seg in self))
@@ -228,7 +231,7 @@ class Message(list):
             pass
         raise ValueError('the addend is not a valid message')
 
-    def append(self, obj: Any) -> None:
+    def append(self, obj: Any) -> Any:
         try:
             if isinstance(obj, MessageSegment):
                 if self and self[-1].type == 'text' and obj.type == 'text':
@@ -237,19 +240,19 @@ class Message(list):
                     super().append(obj)
             else:
                 self.append(MessageSegment(obj))
-            return
+            return self
         except:
             pass
         raise ValueError('the object is not a valid message segment')
 
-    def extend(self, msg: Any) -> None:
+    def extend(self, msg: Any) -> Any:
         try:
             if isinstance(msg, str):
                 msg = self._split_iter(msg)
 
             for seg in msg:
                 self.append(seg)
-            return
+            return self
         except:
             pass
         raise ValueError('the object is not a valid message')
