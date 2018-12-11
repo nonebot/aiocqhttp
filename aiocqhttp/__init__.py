@@ -106,13 +106,17 @@ class CQHttp:
         return jsonify(response) if isinstance(response, dict) else ''
 
     async def _handle_ws_reverse(self):
+        self._validate_ws_reverse_access_token()
+
         role = websocket.headers.get('X-Client-Role', '').lower()
         if role == 'event':
             await self._handle_ws_reverse_event()
         elif role == 'api':
             await self._handle_ws_reverse_api()
+        elif role == 'universal':
+            await self._handle_ws_reverse_universal()
 
-    def _validate_access_token(self):
+    def _validate_ws_reverse_access_token(self):
         if not self._access_token:
             return
 
@@ -128,8 +132,6 @@ class CQHttp:
                 abort(403)
 
     async def _handle_ws_reverse_event(self):
-        self._validate_access_token()
-
         try:
             while True:
                 try:
@@ -141,25 +143,12 @@ class CQHttp:
                     # ignore invalid payload
                     continue
 
-                response = await self._handle_event_payload(payload)
-                if isinstance(response, dict):
-                    try:
-                        await self._api.call_action(
-                            action='.handle_quick_operation_async',
-                            context=payload, operation=response
-                        )
-                    except Error:
-                        pass
+                await self._handle_event_payload_with_response(payload)
         finally:
             pass
 
     async def _handle_ws_reverse_api(self):
-        self._validate_access_token()
-
-        # noinspection PyProtectedMember
-        ws = websocket._get_current_object()
-        self_id = websocket.headers.get('X-Self-ID', '*')
-        self._connected_ws_reverse_api_clients[self_id] = ws
+        self._add_ws_reverse_api_connection()
         try:
             while True:
                 try:
@@ -167,11 +156,39 @@ class CQHttp:
                 except json.JSONDecodeError:
                     pass
         finally:
-            if self_id in self._connected_ws_reverse_api_clients:
-                # we must check the existence here,
-                # because we allow wildcard ws connections,
-                # that is, the self_id may be '*'
-                del self._connected_ws_reverse_api_clients[self_id]
+            self._remove_ws_reverse_api_connection()
+
+    async def _handle_ws_reverse_universal(self):
+        self._add_ws_reverse_api_connection()
+        try:
+            while True:
+                try:
+                    payload = json.loads(await websocket.receive())
+                except json.JSONDecodeError:
+                    payload = None
+
+                if isinstance(payload, dict) and 'post_type' in payload:
+                    # is a event
+                    await self._handle_event_payload_with_response(payload)
+                else:
+                    # is a api result
+                    ResultStore.add(payload)
+        finally:
+            self._remove_ws_reverse_api_connection()
+
+    def _add_ws_reverse_api_connection(self) -> None:
+        # noinspection PyProtectedMember
+        ws = websocket._get_current_object()
+        self_id = websocket.headers.get('X-Self-ID', '*')
+        self._connected_ws_reverse_api_clients[self_id] = ws
+
+    def _remove_ws_reverse_api_connection(self) -> None:
+        self_id = websocket.headers.get('X-Self-ID', '*')
+        if self_id in self._connected_ws_reverse_api_clients:
+            # we must check the existence here,
+            # because we allow wildcard ws connections,
+            # that is, the self_id may be '*'
+            del self._connected_ws_reverse_api_clients[self_id]
 
     async def _handle_event_payload(self, payload: Dict[str, Any]) -> Any:
         post_type = payload.get('post_type')
@@ -190,6 +207,18 @@ class CQHttp:
                               await self._bus.emit(event, context)))
         # return the first non-none result
         return results[0] if results else None
+
+    async def _handle_event_payload_with_response(
+            self, payload: Dict[str, Any]) -> None:
+        response = await self._handle_event_payload(payload)
+        if isinstance(response, dict):
+            try:
+                await self._api.call_action(
+                    action='.handle_quick_operation_async',
+                    context=payload, operation=response
+                )
+            except Error:
+                pass
 
     def run(self, host=None, port=None, *args, **kwargs):
         self._server_app.run(host=host, port=port, *args, **kwargs)
