@@ -1,5 +1,9 @@
 # 更新日志
 
+## v0.6.6
+
+- 支持反向 WebSocket 的 Universal 客户端，无须作任何特殊配置
+
 ## v0.6.5
 
 - `MessageSegment` 类支持互相加法运算，运算结果为 `Message` 类
