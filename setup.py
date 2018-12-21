@@ -14,8 +14,8 @@ setup(
     description='CQHttp Python SDK with Asynchronous I/O',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    install_requires=['Quart>=0.6', 'aiohttp>=3.2'],
-    python_requires='>=3.6',
+    install_requires=['Quart~=0.6.0', 'aiohttp~=3.2'],
+    python_requires='>=3.6.1',
     platforms='any',
     classifiers=(
         "Programming Language :: Python :: 3",
