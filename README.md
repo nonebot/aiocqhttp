@@ -41,7 +41,8 @@ async def handle_msg(context):
 
 @bot.on_notice('group_increase')
 async def handle_group_increase(context):
-    await bot.send(context, message='欢迎新人～', auto_escape=True)
+    await bot.send(context, message='欢迎新人～',
+                   at_sender=True, auto_escape=True)
 
 
 @bot.on_request('group', 'friend')
