@@ -236,12 +236,10 @@ class CQHttp:
     async def send(self, context: Dict[str, Any],
                    message: Union[str, Dict[str, Any], List[Dict[str, Any]]],
                    **kwargs) -> Optional[Dict[str, Any]]:
+        at_sender = kwargs.pop('at_sender', False) and 'user_id' in context
+
         context = context.copy()
-        if kwargs.pop('at_sender', False) and 'user_id' in context:
-            context['message'] = MessageSegment.at(context['user_id']) + \
-                                 MessageSegment.text(' ') + message
-        else:
-            context['message'] = message
+        context['message'] = message
         context.update(kwargs)
         if 'message_type' not in context:
             if 'group_id' in context:
@@ -250,4 +248,9 @@ class CQHttp:
                 context['message_type'] = 'discuss'
             elif 'user_id' in context:
                 context['message_type'] = 'private'
+
+        if at_sender and context['message_type'] != 'private':
+            context['message'] = MessageSegment.at(context['user_id']) + \
+                                 MessageSegment.text(' ') + context['message']
+
         return await self.send_msg(**context)
