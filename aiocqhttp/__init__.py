@@ -1,3 +1,4 @@
+import asyncio
 import hmac
 import json
 import logging
@@ -5,9 +6,10 @@ from typing import Dict, Any, Optional, AnyStr, Callable, Union, List
 
 from quart import Quart, request, abort, jsonify, websocket
 
-from .bus import EventBus
 from .api import HttpApi, WebSocketReverseApi, UnifiedApi, ResultStore
+from .bus import EventBus
 from .exceptions import *
+from .message import MessageSegment
 
 
 def _deco_maker(post_type: str) -> Callable:
@@ -143,7 +145,8 @@ class CQHttp:
                     # ignore invalid payload
                     continue
 
-                await self._handle_event_payload_with_response(payload)
+                asyncio.ensure_future(
+                    self._handle_event_payload_with_response(payload))
         finally:
             pass
 
@@ -169,8 +172,9 @@ class CQHttp:
 
                 if isinstance(payload, dict) and 'post_type' in payload:
                     # is a event
-                    await self._handle_event_payload_with_response(payload)
-                else:
+                    asyncio.ensure_future(
+                        self._handle_event_payload_with_response(payload))
+                elif payload:
                     # is a api result
                     ResultStore.add(payload)
         finally:
@@ -233,7 +237,11 @@ class CQHttp:
                    message: Union[str, Dict[str, Any], List[Dict[str, Any]]],
                    **kwargs) -> Optional[Dict[str, Any]]:
         context = context.copy()
-        context['message'] = message
+        if kwargs.pop('at_sender', False) and 'user_id' in context:
+            context['message'] = MessageSegment.at(context['user_id']) + \
+                                 MessageSegment.text(' ') + message
+        else:
+            context['message'] = message
         context.update(kwargs)
         if 'message_type' not in context:
             if 'group_id' in context:
