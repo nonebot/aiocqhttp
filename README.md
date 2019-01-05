@@ -108,7 +108,7 @@ bot = CQHttp(api_root='http://127.0.0.1:5700/',
 
 为了简化发送消息的操作，提供了 `send(context, message)` 函数，这里的第一个参数 `context` 也就是上报数据，传入之后函数会自己判断当前需要发送到哪里（哪个好友，或哪个群），无需手动再指定，其它参数仍然可以从 keyword argument 指定，例如 `auto_escape=True`。
 
-调用 API 时，如果 API 当前不可用（例如没有任何连接了的 WebSocket、或未配置 API root），则抛出 `aiocqhttp.ApiNotAvailable`；如果 API 可用，但网络无法连接或连接出现错误，会抛出 `aiocqhttp.NetworkError` 异常。而一旦请求成功，SDK 会判断 HTTP 响应状态码是否为 2xx，如果不是，则抛出 `aiocqhttp.HttpFailed` 异常，在这个异常中可通过 `status_code` 获取 HTTP 响应状态码；如果是 2xx，则进一步查看响应 JSON 的 `status` 字段，如果 `status` 字段为 `faild`，则抛出 `aiocqhttp.ActionFailed` 异常，在这个异常中可通过 `retcode` 获取 API 调用的返回码。以上各异常全都继承自 `aiocqhttp.Error`。**如果 `status` 为 `ok` 或 `async`，则不抛出异常，函数返回插件响应数据的 `data` 字段（有可能为 None）**。具体 HTTP 响应状态码和 `retcode` 的含义，见 [响应说明](https://cqhttp.cc/docs/#/API?id=%E5%93%8D%E5%BA%94%E8%AF%B4%E6%98%8E)。
+调用 API 时，如果 API 当前不可用（例如没有任何连接了的 WebSocket、或未配置 API root），则抛出 `aiocqhttp.ApiNotAvailable`；如果 API 可用，但网络无法连接或连接出现错误，会抛出 `aiocqhttp.NetworkError` 异常。而一旦请求成功，SDK 会判断 HTTP 响应状态码是否为 2xx，如果不是，则抛出 `aiocqhttp.HttpFailed` 异常，在这个异常中可通过 `status_code` 获取 HTTP 响应状态码；如果是 2xx，则进一步查看响应 JSON 的 `status` 字段，如果 `status` 字段为 `failed`，则抛出 `aiocqhttp.ActionFailed` 异常，在这个异常中可通过 `retcode` 获取 API 调用的返回码。以上各异常全都继承自 `aiocqhttp.Error`。**如果 `status` 为 `ok` 或 `async`，则不抛出异常，函数返回插件响应数据的 `data` 字段（有可能为 None）**。具体 HTTP 响应状态码和 `retcode` 的含义，见 [响应说明](https://cqhttp.cc/docs/#/API?id=%E5%93%8D%E5%BA%94%E8%AF%B4%E6%98%8E)。
 
 ### 运行实例
 
