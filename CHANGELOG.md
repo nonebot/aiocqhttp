@@ -1,5 +1,9 @@
 # 更新日志
 
+## v0.6.8
+
+- 修复反向 WebSocket API 和 Event 独立连接时没有校验 access token 的问题
+
 ## v0.6.7
 
 - 修复使用反向 WebSocket 的 Universal 客户端时，事件回调函数返回的快速操作不能正确执行的问题
