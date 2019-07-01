@@ -48,8 +48,8 @@ class CQHttp:
                 self._handle_http_event)
 
         self._server_app.websocket('/ws/')(self._handle_ws_reverse)
-        self._server_app.websocket('/ws/event/')(self._handle_ws_reverse_event)
-        self._server_app.websocket('/ws/api/')(self._handle_ws_reverse_api)
+        self._server_app.websocket('/ws/event/')(self._handle_ws_reverse)
+        self._server_app.websocket('/ws/api/')(self._handle_ws_reverse)
         self._connected_ws_reverse_api_clients = {}
 
         self._api = UnifiedApi(http_api=HttpApi(api_root, access_token),
