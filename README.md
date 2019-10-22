@@ -7,7 +7,7 @@
 [![QQ 版本发布群](https://img.shields.io/badge/%E7%89%88%E6%9C%AC%E5%8F%91%E5%B8%83%E7%BE%A4-218529254-green.svg)](https://jq.qq.com/?_wv=1027&k=5Nl0zhE)
 [![Telegram 版本发布频道](https://img.shields.io/badge/%E7%89%88%E6%9C%AC%E5%8F%91%E5%B8%83%E9%A2%91%E9%81%93-join-green.svg)](https://t.me/cqhttp_release)
 
-本项目为酷 Q 的 CoolQ HTTP API 插件的新一代 Python SDK，采用异步 I/O，封装了 web server 相关的代码，支持 HTTP API 插件的 HTTP 和反向 WebSocket 两种通信方式，让使用 Python 的开发者能方便地开发插件。仅支持 Python 3.6+ 及插件 v4.x，如果你使用较旧版本，请使用 [`python-cqhttp`](https://github.com/richardchien/python-cqhttp)。
+本项目为 酷Q 的 CoolQ HTTP API 插件的新一代 Python SDK，采用异步 I/O，封装了 web server 相关的代码，支持 HTTP API 插件的 HTTP 和反向 WebSocket 两种通信方式，让使用 Python 的开发者能方便地开发插件。仅支持 Python 3.6+ 及插件 v4.x，如果你使用较旧版本，请使用 [`python-cqhttp`](https://github.com/richardchien/python-cqhttp)。
 
 关于 CoolQ HTTP API 插件，见 [richardchien/coolq-http-api](https://github.com/richardchien/coolq-http-api)；关于异步 I/O，见 [asyncio](https://docs.python.org/3/library/asyncio.html)。
 
@@ -78,7 +78,7 @@ bot = CQHttp(access_token='your-token',
 
 #### 只使用 HTTP
 
-传入 `api_root`，即为酷 Q HTTP API 插件的监听地址，如果你不需要调用 API，也可以不传入。访问令牌（`access_token`）和签名密钥（`secret`）也在这里传入，如果没有配置插件的 `access_token` 或 `secret` 项，则不传。
+传入 `api_root`，即为 酷Q HTTP API 插件的监听地址，如果你不需要调用 API，也可以不传入。访问令牌（`access_token`）和签名密钥（`secret`）也在这里传入，如果没有配置插件的 `access_token` 或 `secret` 项，则不传。
 
 示例：
 
@@ -106,7 +106,9 @@ bot = CQHttp(api_root='http://127.0.0.1:5700/',
 
 直接在 `CQHttp` 类的实例上就可以调用 API，例如 `bot.send_private_msg(user_id=123456, message='hello')`，这里的 `send_private_msg` 即为 [`/send_private_msg` 发送私聊消息](https://cqhttp.cc/docs/#/API?id=send_private_msg-%E5%8F%91%E9%80%81%E7%A7%81%E8%81%8A%E6%B6%88%E6%81%AF) 中的 `/send_private_msg`，**API 所需参数直接通过命名参数（keyword argument）传入**。其它 API 见 [API 列表](https://cqhttp.cc/docs/#/API?id=api-列表)。
 
-为了简化发送消息的操作，提供了 `send(context, message)` 函数，这里的第一个参数 `context` 也就是上报数据，传入之后函数会自己判断当前需要发送到哪里（哪个好友，或哪个群），无需手动再指定，其它参数仍然可以从 keyword argument 指定，例如 `auto_escape=True`。
+如果有多个 酷Q 同时连接到同一个 aiocqhttp，在事件处理函数中调用 `bot.send_private_msg` 等接口时，aiocqhttp 会自动判断当前正在处理的 QQ；如果需要明确指定 API 调用的目标 QQ，可以加上 `self_id` 命名参数，例如 `bot.get_group_list(self_id=12345678)`。
+
+为了简化发送消息的操作，提供了 `send(context, message)` 函数，这里的第一个参数 `context` 也就是上报数据，传入之后函数会自己判断当前需要发送到哪里（哪个好友，或哪个群），无需手动再指定，其它参数仍然可以通过命名参数指定，例如 `auto_escape=True`。
 
 调用 API 时，如果 API 当前不可用（例如没有任何连接了的 WebSocket、或未配置 API root），则抛出 `aiocqhttp.ApiNotAvailable`；如果 API 可用，但网络无法连接或连接出现错误，会抛出 `aiocqhttp.NetworkError` 异常。而一旦请求成功，SDK 会判断 HTTP 响应状态码是否为 2xx，如果不是，则抛出 `aiocqhttp.HttpFailed` 异常，在这个异常中可通过 `status_code` 获取 HTTP 响应状态码；如果是 2xx，则进一步查看响应 JSON 的 `status` 字段，如果 `status` 字段为 `failed`，则抛出 `aiocqhttp.ActionFailed` 异常，在这个异常中可通过 `retcode` 获取 API 调用的返回码。以上各异常全都继承自 `aiocqhttp.Error`。**如果 `status` 为 `ok` 或 `async`，则不抛出异常，函数返回插件响应数据的 `data` 字段（有可能为 None）**。具体 HTTP 响应状态码和 `retcode` 的含义，见 [响应说明](https://cqhttp.cc/docs/#/API?id=%E5%93%8D%E5%BA%94%E8%AF%B4%E6%98%8E)。
 
