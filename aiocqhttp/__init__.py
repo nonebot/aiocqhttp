@@ -44,12 +44,13 @@ class CQHttp:
         self._server_app = Quart(__name__)
 
         if enable_http_post:
-            self._server_app.route('/', methods=['POST'])(
-                self._handle_http_event)
+            self._server_app.add_url_rule('/', methods=['POST'],
+                                          view_func=self._handle_http_event)
 
-        self._server_app.websocket('/ws/')(self._handle_ws_reverse)
-        self._server_app.websocket('/ws/event/')(self._handle_ws_reverse)
-        self._server_app.websocket('/ws/api/')(self._handle_ws_reverse)
+        for p in ('/ws', '/ws/event', '/ws/api'):
+            self._server_app.add_websocket(p, strict_slashes=False,
+                                           view_func=self._handle_ws_reverse)
+
         self._connected_ws_reverse_api_clients = {}
 
         self._api = UnifiedApi(http_api=HttpApi(api_root, access_token),
