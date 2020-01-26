@@ -1,5 +1,11 @@
 # 更新日志
 
+## v0.7.0
+
+- 修复 WebSocket URI 结尾必须带 `/` 的问题，现在能够正确处理 `/ws` 等
+- 更新依赖版本（Quart、aiohttp）
+- 提升最低 Python 版本要求至 3.7
+
 ## v0.6.8
 
 - 修复反向 WebSocket API 和 Event 独立连接时没有校验 access token 的问题
