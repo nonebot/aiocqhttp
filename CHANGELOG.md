@@ -1,5 +1,18 @@
 # 更新日志
 
+## next
+
+- 新增默认 `CQHttp` 实例 `aiocqhttp.default_bot`，可通过 `aiocqhttp.on_message` 等装饰器直接注册事件处理函数、通过 `aiocqhttp.run` 运行实例、通过 `aiocqhttp.send` 发送消息、通过 `aiocqhttp.api` 调用 CQHTTP API
+- `CQHttp` 初始化器移除 `enable_http_post` 命名参数
+- `CQHttp` 初始化器参数全部改为命名参数，如果你在基于位置传参，可能需要适当修改
+- 事件处理函数的唯一参数改为 `aiocqhttp.Event` 类，提供属性方便获取事件数据，此类基于 `dict`，因此无需修改现有代码
+- 不再支持 CQHTTP v4.0~4.7，请升级至 v4.8 或更新版本
+
+TODO: 
+
+- 支持使用同步函数作为事件处理函数（不一定能实现，可能存在线程安全性问题）
+- 规范文档
+
 ## v0.7.0
 
 - 修复 WebSocket URI 结尾必须带 `/` 的问题，现在能够正确处理 `/ws` 等
