@@ -14,7 +14,11 @@ from quart import Quart, request, abort, jsonify, websocket, Response
 from .api import HttpApi, WebSocketReverseApi, UnifiedApi, ResultStore
 from .bus import EventBus
 from .exceptions import *
-from .message import MessageSegment
+from .message import Message, MessageSegment
+
+__all__ = [
+    'CQHttp', 'Message', 'MessageSegment'
+]
 
 
 def _deco_maker(post_type: str) -> Callable:
@@ -36,34 +40,34 @@ def _deco_maker(post_type: str) -> Callable:
 
 
 class CQHttp:
-    def __init__(self, *args,
+    def __init__(self,
                  api_root: Optional[str] = None,
                  access_token: Optional[str] = None,
                  secret: Optional[AnyStr] = None,
-                 enable_http_post: bool = True,
-                 enable_websocket_reverse: bool = True,
-                 message_class: Optional[type] = None,
-                 **kwargs):
+                 message_class: Optional[type] = None):
+        self.api = UnifiedApi()
+        self._bus = EventBus()
+
+        self._server_app = Quart(__name__)
+        self._server_app.add_url_rule('/', methods=['POST'],
+                                      view_func=self._handle_http_event)
+        for p in ('/ws', '/ws/event', '/ws/api'):
+            self._server_app.add_websocket(p, strict_slashes=False,
+                                           view_func=self._handle_wsr)
+
+        self._configure(api_root, access_token, secret, message_class)
+
+    def _configure(self,
+                   api_root: Optional[str] = None,
+                   access_token: Optional[str] = None,
+                   secret: Optional[AnyStr] = None,
+                   message_class: Optional[type] = None):
         self._access_token = access_token
         self._secret = secret
         self._message_class = message_class
-        self._bus = EventBus()
-        self._server_app = Quart(__name__)
-
-        if enable_http_post:
-            self._server_app.add_url_rule('/', methods=['POST'],
-                                          view_func=self._handle_http_event)
-
-        if enable_websocket_reverse:
-            for p in ('/ws', '/ws/event', '/ws/api'):
-                self._server_app.add_websocket(p, strict_slashes=False,
-                                               view_func=self._handle_wsr)
-
         self._wsr_api_clients = {}  # connected wsr api clients
-        self._api = UnifiedApi(
-            http_api=HttpApi(api_root, access_token),
-            wsr_api=WebSocketReverseApi(self._wsr_api_clients)
-        )
+        self.api._http_api = HttpApi(api_root, access_token)
+        self.api._wsr_api = WebSocketReverseApi(self._wsr_api_clients)
 
     @property
     def asgi(self) -> Quart:
@@ -237,7 +241,7 @@ class CQHttp:
             payload.pop('comment', None)
             payload.pop('sender', None)
             try:
-                await self._api.call_action(
+                await self.api.call_action(
                     self_id=payload['self_id'],
                     action='.handle_quick_operation_async',
                     context=payload, operation=response
@@ -249,10 +253,10 @@ class CQHttp:
         self._server_app.run(host=host, port=port, *args, **kwargs)
 
     async def call_action(self, action: str, **params) -> Any:
-        return await self._api.call_action(action=action, **params)
+        return await self.api.call_action(action=action, **params)
 
     def __getattr__(self, item) -> Callable:
-        return self._api.__getattr__(item)
+        return self.api.__getattr__(item)
 
     async def send(self, context: Dict[str, Any],
                    message: Union[str, Dict[str, Any], List[Dict[str, Any]]],
@@ -279,3 +283,9 @@ class CQHttp:
                                  MessageSegment.text(' ') + context['message']
 
         return await self.send_msg(**context)
+
+
+from . import default
+from .default import *
+
+__all__ += default.__all__
