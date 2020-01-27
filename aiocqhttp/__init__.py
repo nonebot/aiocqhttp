@@ -15,21 +15,22 @@ from .api import HttpApi, WebSocketReverseApi, UnifiedApi, ResultStore
 from .bus import EventBus
 from .exceptions import *
 from .message import Message, MessageSegment
+from .event import Event
 
 __all__ = [
-    'CQHttp', 'Message', 'MessageSegment'
+    'CQHttp', 'Message', 'MessageSegment', 'Event'
 ]
 
 
-def _deco_maker(post_type: str) -> Callable:
+def _deco_maker(type_: str) -> Callable:
     def deco_deco(self, arg: Optional[Union[str, Callable]] = None,
-                  *events: str) -> Callable:
+                  *sub_event_names: str) -> Callable:
         def deco(func: Callable) -> Callable:
             if isinstance(arg, str):
-                e = [post_type + '.' + e for e in [arg] + list(events)]
+                e = [type_ + '.' + e for e in [arg] + list(sub_event_names)]
                 self.on(*e)(func)
             else:
-                self.on(post_type)(func)
+                self.on(type_)(func)
             return func
 
         if isinstance(arg, Callable):
@@ -81,16 +82,16 @@ class CQHttp:
     def logger(self) -> logging.Logger:
         return self._server_app.logger
 
-    def subscribe(self, event: str, func: Callable) -> None:
-        self._bus.subscribe(event, func)
+    def subscribe(self, event_name: str, func: Callable) -> None:
+        self._bus.subscribe(event_name, func)
 
-    def unsubscribe(self, event: str, func: Callable) -> None:
-        self._bus.unsubscribe(event, func)
+    def unsubscribe(self, event_name: str, func: Callable) -> None:
+        self._bus.unsubscribe(event_name, func)
 
-    def on(self, *events: str) -> Callable:
+    def on(self, *event_names: str) -> Callable:
         def deco(func: Callable) -> Callable:
-            for event in events:
-                self.subscribe(event, func)
+            for name in event_names:
+                self.subscribe(name, func)
             return func
 
         return deco
@@ -213,22 +214,17 @@ class CQHttp:
             del self._wsr_api_clients[self_id]
 
     async def _handle_event(self, payload: Dict[str, Any]) -> Any:
-        post_type = payload.get('post_type')
-        detail_type = payload.get('{}_type'.format(post_type))
-        if not post_type or not detail_type:
+        ev = Event.from_payload(payload)
+        if not ev:
             return
 
-        event = post_type + '.' + detail_type
-        if payload.get('sub_type'):
-            event += '.' + payload['sub_type']
+        event_name = ev.name
+        self.logger.info(f'received event: {event_name}')
 
-        self.logger.info(f'received event: {event}')
-
-        context = payload.copy()
-        if self._message_class and 'message' in context:
-            context['message'] = self._message_class(context['message'])
+        if self._message_class and 'message' in ev:
+            ev['message'] = self._message_class(ev['message'])
         results = list(filter(lambda r: r is not None,
-                              await self._bus.emit(event, context)))
+                              await self._bus.emit(event_name, ev)))
         # return the first non-none result
         return results[0] if results else None
 
@@ -258,31 +254,31 @@ class CQHttp:
     def __getattr__(self, item) -> Callable:
         return self.api.__getattr__(item)
 
-    async def send(self, context: Dict[str, Any],
+    async def send(self, event: Event,
                    message: Union[str, Dict[str, Any], List[Dict[str, Any]]],
                    **kwargs) -> Optional[Dict[str, Any]]:
-        at_sender = kwargs.pop('at_sender', False) and 'user_id' in context
+        at_sender = kwargs.pop('at_sender', False) and 'user_id' in event
 
-        context = context.copy()
-        context['message'] = message
-        context.pop('raw_message', None)  # avoid wasting bandwidth
-        context.pop('comment', None)
-        context.pop('sender', None)
-        context.update(kwargs)
+        params = event.copy()
+        params['message'] = message
+        params.pop('raw_message', None)  # avoid wasting bandwidth
+        params.pop('comment', None)
+        params.pop('sender', None)
+        params.update(kwargs)
 
-        if 'message_type' not in context:
-            if 'group_id' in context:
-                context['message_type'] = 'group'
-            elif 'discuss_id' in context:
-                context['message_type'] = 'discuss'
-            elif 'user_id' in context:
-                context['message_type'] = 'private'
+        if 'message_type' not in params:
+            if 'group_id' in params:
+                params['message_type'] = 'group'
+            elif 'discuss_id' in params:
+                params['message_type'] = 'discuss'
+            elif 'user_id' in params:
+                params['message_type'] = 'private'
 
-        if at_sender and context['message_type'] != 'private':
-            context['message'] = MessageSegment.at(context['user_id']) + \
-                                 MessageSegment.text(' ') + context['message']
+        if at_sender and params['message_type'] != 'private':
+            params['message'] = MessageSegment.at(params['user_id']) + \
+                                MessageSegment.text(' ') + params['message']
 
-        return await self.send_msg(**context)
+        return await self.send_msg(**params)
 
 
 from . import default
