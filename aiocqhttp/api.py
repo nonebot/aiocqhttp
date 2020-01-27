@@ -20,8 +20,7 @@ class Api:
         return functools.partial(self.call_action, item)
 
     @abc.abstractmethod
-    async def call_action(self, action: str, **params) -> \
-            Optional[Dict[str, Any]]:
+    async def call_action(self, action: str, **params) -> Any:
         """Send API request to call the specified action."""
         pass
 
@@ -43,9 +42,8 @@ def _handle_api_result(result: Optional[Dict[str, Any]]) -> Any:
 class HttpApi(Api):
     """Call APIs through HTTP."""
 
-    def __init__(self, api_root: Optional[str], access_token: Optional[str],
-                 *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, api_root: Optional[str], access_token: Optional[str]):
+        super().__init__()
         self._api_root = api_root.rstrip('/') if api_root else None
         self._access_token = access_token
 
@@ -55,7 +53,7 @@ class HttpApi(Api):
 
         headers = {}
         if self._access_token:
-            headers['Authorization'] = 'Token ' + self._access_token
+            headers['Authorization'] = 'Bearer ' + self._access_token
 
         try:
             async with aiohttp.request('POST', self._api_root + '/' + action,
@@ -111,38 +109,31 @@ class ResultStore:
 class WebSocketReverseApi(Api):
     """Call APIs through reverse WebSocket."""
 
-    def __init__(self, connected_clients: Dict[str, Websocket],
-                 *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._connected_clients = connected_clients
+    def __init__(self, connected_clients: Dict[str, Websocket]):
+        super().__init__()
+        self._clients = connected_clients
 
     async def call_action(self, action: str, **params) -> Any:
         api_ws = None
         if self._is_available():
-            api_ws = self._connected_clients.get(
-                event_ws.headers.get('X-Self-ID', '*'))
+            api_ws = self._clients.get(event_ws.headers['X-Self-ID'])
         elif params.get('self_id'):
-            api_ws = self._connected_clients.get(str(params['self_id']))
-        elif len(self._connected_clients) == 1:
-            api_ws = list(self._connected_clients.values())[0]
+            api_ws = self._clients.get(str(params['self_id']))
+        elif len(self._clients) == 1:
+            api_ws = list(self._clients.values())[0]
 
         if not api_ws:
             raise ApiNotAvailable
 
         seq = _SequenceGenerator.next()
         await api_ws.send(json.dumps({
-            'action': action,
-            'params': params,
-            'echo': {
-                'seq': seq
-            }
+            'action': action, 'params': params, 'echo': {'seq': seq}
         }))
         return _handle_api_result(await ResultStore.fetch(seq))
 
     def _is_available(self) -> bool:
         # available only when current event ws has a corresponding api ws
-        return event_ws and event_ws.headers.get(
-            'X-Self-ID', '*') in self._connected_clients
+        return event_ws and event_ws.headers['X-Self-ID'] in self._clients
 
 
 class UnifiedApi(Api):
@@ -151,31 +142,26 @@ class UnifiedApi(Api):
     depending on availability.
     """
 
-    def __init__(self, *args,
-                 http_api: Api = None,
-                 ws_reverse_api: Api = None,
-                 **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, http_api: Api = None, wsr_api: Api = None):
+        super().__init__()
         self._http_api = http_api
-        self._ws_reverse_api = ws_reverse_api
+        self._wsr_api = wsr_api
 
     async def call_action(self, action: str, **params) -> Any:
         result = None
         succeeded = False
 
-        if self._ws_reverse_api:
+        if self._wsr_api:
             # WebSocket is preferred
             try:
-                result = await self._ws_reverse_api.call_action(
-                    action, **params)
+                result = await self._wsr_api.call_action(action, **params)
                 succeeded = True
             except ApiNotAvailable:
                 pass
 
         if not succeeded and self._http_api:
             try:
-                result = await self._http_api.call_action(
-                    action, **params)
+                result = await self._http_api.call_action(action, **params)
                 succeeded = True
             except ApiNotAvailable:
                 pass

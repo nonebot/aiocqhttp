@@ -2,9 +2,10 @@ import asyncio
 import hmac
 import json
 import logging
+import re
 from typing import Dict, Any, Optional, AnyStr, Callable, Union, List
 
-from quart import Quart, request, abort, jsonify, websocket
+from quart import Quart, request, abort, jsonify, websocket, Response
 
 from .api import HttpApi, WebSocketReverseApi, UnifiedApi, ResultStore
 from .bus import EventBus
@@ -31,15 +32,17 @@ def _deco_maker(post_type: str) -> Callable:
 
 
 class CQHttp:
-    def __init__(self,
+    def __init__(self, *args,
                  api_root: Optional[str] = None,
                  access_token: Optional[str] = None,
                  secret: Optional[AnyStr] = None,
                  enable_http_post: bool = True,
-                 message_class: type = None,
-                 *args, **kwargs):
+                 enable_websocket_reverse: bool = True,
+                 message_class: Optional[type] = None,
+                 **kwargs):
         self._access_token = access_token
         self._secret = secret
+        self._message_class = message_class
         self._bus = EventBus()
         self._server_app = Quart(__name__)
 
@@ -47,17 +50,16 @@ class CQHttp:
             self._server_app.add_url_rule('/', methods=['POST'],
                                           view_func=self._handle_http_event)
 
-        for p in ('/ws', '/ws/event', '/ws/api'):
-            self._server_app.add_websocket(p, strict_slashes=False,
-                                           view_func=self._handle_ws_reverse)
+        if enable_websocket_reverse:
+            for p in ('/ws', '/ws/event', '/ws/api'):
+                self._server_app.add_websocket(p, strict_slashes=False,
+                                               view_func=self._handle_wsr)
 
-        self._connected_ws_reverse_api_clients = {}
-
-        self._api = UnifiedApi(http_api=HttpApi(api_root, access_token),
-                               ws_reverse_api=WebSocketReverseApi(
-                                   self._connected_ws_reverse_api_clients))
-
-        self._message_class = message_class
+        self._wsr_api_clients = {}  # connected wsr api clients
+        self._api = UnifiedApi(
+            http_api=HttpApi(api_root, access_token),
+            wsr_api=WebSocketReverseApi(self._wsr_api_clients)
+        )
 
     @property
     def asgi(self) -> Quart:
@@ -90,118 +92,125 @@ class CQHttp:
     on_request = _deco_maker('request')
     on_meta_event = _deco_maker('meta_event')
 
-    async def _handle_http_event(self):
+    async def _handle_http_event(self) -> Response:
         if self._secret:
             if 'X-Signature' not in request.headers:
+                self.logger.warning('signature header is missed')
                 abort(401)
 
             sec = self._secret
             sec = sec.encode('utf-8') if isinstance(sec, str) else sec
             sig = hmac.new(sec, await request.get_data(), 'sha1').hexdigest()
             if request.headers['X-Signature'] != 'sha1=' + sig:
+                self.logger.warning('signature header is invalid')
                 abort(403)
 
         payload = await request.json
         if not isinstance(payload, dict):
             abort(400)
 
-        response = await self._handle_event_payload(payload)
-        return jsonify(response) if isinstance(response, dict) else ''
+        if request.headers['X-Self-ID'] in self._wsr_api_clients:
+            self.logger.warning(
+                'there is already a reverse websocket api connection, '
+                'so the event may be handled twice.')
 
-    async def _handle_ws_reverse(self):
-        self._validate_ws_reverse_access_token()
+        response = await self._handle_event(payload)
+        if isinstance(response, dict):
+            return jsonify(response)
+        return Response('', 204)
 
-        role = websocket.headers.get('X-Client-Role', '').lower()
-        if role == 'event':
-            await self._handle_ws_reverse_event()
-        elif role == 'api':
-            await self._handle_ws_reverse_api()
-        elif role == 'universal':
-            await self._handle_ws_reverse_universal()
-
-    def _validate_ws_reverse_access_token(self):
-        if not self._access_token:
-            return
-
-        if websocket:
+    async def _handle_wsr(self) -> None:
+        if self._access_token:
             auth = websocket.headers.get('Authorization', '')
-            if not auth.startswith('Token ') and not auth.startswith('token '):
+            m = re.fullmatch(r'(?:[Tt]oken|[Bb]earer) (?P<token>\S+)', auth)
+            if not m:
+                self.logger.warning('authorization header is missed')
                 abort(401)
 
-            token_given = auth[len('Token '):].strip()
-            if not token_given:
-                abort(401)
+            token_given = m.group('token').strip()
             if token_given != self._access_token:
+                self.logger.warning('authorization header is invalid')
                 abort(403)
 
-    async def _handle_ws_reverse_event(self):
+        role = websocket.headers['X-Client-Role'].lower()
+        if role == 'event':
+            await self._handle_wsr_event()
+        elif role == 'api':
+            await self._handle_wsr_api()
+        elif role == 'universal':
+            await self._handle_wsr_universal()
+
+    async def _handle_wsr_event(self) -> None:
         try:
             while True:
                 try:
                     payload = json.loads(await websocket.receive())
-                except json.JSONDecodeError:
+                except ValueError:
                     payload = None
 
                 if not isinstance(payload, dict):
                     # ignore invalid payload
                     continue
 
-                asyncio.ensure_future(
-                    self._handle_event_payload_with_response(payload))
+                asyncio.create_task(self._handle_event_with_response(payload))
         finally:
             pass
 
-    async def _handle_ws_reverse_api(self):
-        self._add_ws_reverse_api_connection()
+    async def _handle_wsr_api(self) -> None:
+        self._add_wsr_api_client()
         try:
             while True:
                 try:
                     ResultStore.add(json.loads(await websocket.receive()))
-                except json.JSONDecodeError:
+                except ValueError:
                     pass
         finally:
-            self._remove_ws_reverse_api_connection()
+            self._remove_wsr_api_client()
 
-    async def _handle_ws_reverse_universal(self):
-        self._add_ws_reverse_api_connection()
+    async def _handle_wsr_universal(self) -> None:
+        self._add_wsr_api_client()
         try:
             while True:
                 try:
                     payload = json.loads(await websocket.receive())
-                except json.JSONDecodeError:
+                except ValueError:
                     payload = None
 
-                if isinstance(payload, dict) and 'post_type' in payload:
+                if not isinstance(payload, dict):
+                    # ignore invalid payload
+                    continue
+
+                if 'post_type' in payload:
                     # is a event
-                    asyncio.ensure_future(
-                        self._handle_event_payload_with_response(payload))
+                    asyncio.create_task(
+                        self._handle_event_with_response(payload))
                 elif payload:
                     # is a api result
                     ResultStore.add(payload)
         finally:
-            self._remove_ws_reverse_api_connection()
+            self._remove_wsr_api_client()
 
-    def _add_ws_reverse_api_connection(self) -> None:
+    def _add_wsr_api_client(self) -> None:
         # noinspection PyProtectedMember
         ws = websocket._get_current_object()
-        self_id = websocket.headers.get('X-Self-ID', '*')
-        self._connected_ws_reverse_api_clients[self_id] = ws
+        self_id = websocket.headers['X-Self-ID']
+        self._wsr_api_clients[self_id] = ws
 
-    def _remove_ws_reverse_api_connection(self) -> None:
-        self_id = websocket.headers.get('X-Self-ID', '*')
-        if self_id in self._connected_ws_reverse_api_clients:
+    def _remove_wsr_api_client(self) -> None:
+        self_id = websocket.headers['X-Self-ID']
+        if self_id in self._wsr_api_clients:
             # we must check the existence here,
             # because we allow wildcard ws connections,
             # that is, the self_id may be '*'
-            del self._connected_ws_reverse_api_clients[self_id]
+            del self._wsr_api_clients[self_id]
 
-    async def _handle_event_payload(self, payload: Dict[str, Any]) -> Any:
+    async def _handle_event(self, payload: Dict[str, Any]) -> Any:
         post_type = payload.get('post_type')
-        detailed_type = payload.get('{}_type'.format(post_type))
-        if not post_type or not detailed_type:
+        detail_type = payload.get('{}_type'.format(post_type))
+        if not post_type or not detail_type:
             return
 
-        event = post_type + '.' + detailed_type
+        event = post_type + '.' + detail_type
         if payload.get('sub_type'):
             event += '.' + payload['sub_type']
 
@@ -213,19 +222,24 @@ class CQHttp:
         # return the first non-none result
         return results[0] if results else None
 
-    async def _handle_event_payload_with_response(
+    async def _handle_event_with_response(
             self, payload: Dict[str, Any]) -> None:
-        response = await self._handle_event_payload(payload)
+        response = await self._handle_event(payload)
         if isinstance(response, dict):
+            payload.pop('message', None)  # avoid wasting bandwidth
+            payload.pop('raw_message', None)
+            payload.pop('comment', None)
+            payload.pop('sender', None)
             try:
                 await self._api.call_action(
+                    self_id=payload['self_id'],
                     action='.handle_quick_operation_async',
                     context=payload, operation=response
                 )
             except Error:
                 pass
 
-    def run(self, host=None, port=None, *args, **kwargs):
+    def run(self, host: str = None, port: int = None, *args, **kwargs) -> None:
         self._server_app.run(host=host, port=port, *args, **kwargs)
 
     async def call_action(self, action: str, **params) -> Any:
@@ -241,7 +255,11 @@ class CQHttp:
 
         context = context.copy()
         context['message'] = message
+        context.pop('raw_message', None)  # avoid wasting bandwidth
+        context.pop('comment', None)
+        context.pop('sender', None)
         context.update(kwargs)
+
         if 'message_type' not in context:
             if 'group_id' in context:
                 context['message_type'] = 'group'
