@@ -8,7 +8,8 @@ bot = CQHttp(api_root='http://127.0.0.1:5700/',
 @bot.on_message
 # 上面这句等价于 @bot.on('message')
 async def handle_msg(context):
-    # 下面这句等价于 bot.send_private_msg(user_id=context['user_id'], message='你好呀，下面一条是你刚刚发的：')
+    # 下面这句等价于 bot.send_private_msg(user_id=context['user_id'],
+    #                                  message='你好呀，下面一条是你刚刚发的：')
     try:
         await bot.send(context, '你好呀，下面一条是你刚刚发的：')
     except ApiError:
