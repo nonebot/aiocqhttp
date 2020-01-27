@@ -15,6 +15,9 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     install_requires=['Quart~=0.10', 'aiohttp~=3.6'],
+    extras_require={
+        'all': ['ujson'],
+    },
     python_requires='>=3.7',
     platforms='any',
     classifiers=(

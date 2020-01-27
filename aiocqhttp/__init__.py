@@ -1,9 +1,13 @@
 import asyncio
 import hmac
-import json
 import logging
 import re
 from typing import Dict, Any, Optional, AnyStr, Callable, Union, List
+
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 from quart import Quart, request, abort, jsonify, websocket, Response
 
@@ -213,6 +217,8 @@ class CQHttp:
         event = post_type + '.' + detail_type
         if payload.get('sub_type'):
             event += '.' + payload['sub_type']
+
+        self.logger.info(f'received event: {event}')
 
         context = payload.copy()
         if self._message_class and 'message' in context:

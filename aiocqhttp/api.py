@@ -1,9 +1,13 @@
 import abc
 import asyncio
 import functools
-import json
 import sys
 from typing import Callable, Dict, Any, Optional
+
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 import aiohttp
 from quart import websocket as event_ws
