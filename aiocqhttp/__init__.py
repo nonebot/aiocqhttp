@@ -109,6 +109,12 @@ class CQHttp:
             self._sync_api = SyncApi(self._api, self._loop)
         return self._sync_api
 
+    async def call_action(self, action: str, **params) -> Any:
+        return await self._api.call_action(action=action, **params)
+
+    def __getattr__(self, item) -> Callable:
+        return self._api.__getattr__(item)
+
     def subscribe(self, event_name: str, func: Callable) -> None:
         self._bus.subscribe(event_name, func)
 
@@ -273,12 +279,6 @@ class CQHttp:
 
     def run(self, host: str = None, port: int = None, *args, **kwargs) -> None:
         self._server_app.run(host=host, port=port, *args, **kwargs)
-
-    async def call_action(self, action: str, **params) -> Any:
-        return await self._api.call_action(action=action, **params)
-
-    def __getattr__(self, item) -> Callable:
-        return self._api.__getattr__(item)
 
     async def send(self, event: Event,
                    message: Union[str, Dict[str, Any], List[Dict[str, Any]]],
