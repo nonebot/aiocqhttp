@@ -14,6 +14,7 @@ from quart import websocket as event_ws
 from quart.wrappers.request import Websocket
 
 from .exceptions import *
+from .utils import sync_wait
 
 
 class Api:
@@ -27,6 +28,22 @@ class Api:
     async def call_action(self, action: str, **params) -> Any:
         """Send API request to call the specified action."""
         pass
+
+
+class SyncApi:
+    def __init__(self, async_api: Api, loop: asyncio.AbstractEventLoop):
+        self._async_api = async_api
+        self._loop = loop
+
+    def __getattr__(self, item: str) -> Callable:
+        """Get a callable that sends the actual API request internally."""
+        return functools.partial(self.call_action, item)
+
+    def call_action(self, action: str, **params) -> Any:
+        return sync_wait(
+            coro=self._async_api.call_action(action, **params),
+            loop=self._loop
+        )
 
 
 def _handle_api_result(result: Optional[Dict[str, Any]]) -> Any:

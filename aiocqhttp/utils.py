@@ -67,7 +67,7 @@ def ensure_async(func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
         return run_sync(func)
 
 
-def sync_wait(coro: Awaitable,
+def sync_wait(coro: Awaitable[Any],
               loop: asyncio.AbstractEventLoop) -> Any:
     fut = asyncio.run_coroutine_threadsafe(coro, loop)
     return fut.result()

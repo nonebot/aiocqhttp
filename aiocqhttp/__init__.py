@@ -12,7 +12,8 @@ except ImportError:
 
 from quart import Quart, request, abort, jsonify, websocket, Response
 
-from .api import Api, HttpApi, WebSocketReverseApi, UnifiedApi, ResultStore
+from .api import (Api, SyncApi, HttpApi, WebSocketReverseApi, UnifiedApi,
+                  ResultStore)
 from .bus import EventBus
 from .exceptions import *
 from .message import Message, MessageSegment
@@ -50,6 +51,7 @@ class CQHttp:
                  secret: Optional[AnyStr] = None,
                  message_class: Optional[type] = None):
         self._api = UnifiedApi()
+        self._sync_api = None
         self._bus = EventBus()
         self._loop = None
 
@@ -79,10 +81,6 @@ class CQHttp:
         self._loop = asyncio.get_running_loop()
 
     @property
-    def api(self) -> Api:
-        return self._api
-
-    @property
     def asgi(self) -> Callable[[dict, Callable, Callable], Awaitable]:
         return self._server_app
 
@@ -97,6 +95,19 @@ class CQHttp:
     @property
     def loop(self) -> Optional[asyncio.AbstractEventLoop]:
         return self._loop
+
+    @property
+    def api(self) -> Api:
+        return self._api
+
+    @property
+    def sync(self) -> SyncApi:
+        if not self._sync_api:
+            if not self._loop:
+                raise TimingError('attempt to access sync api '
+                                  'before bot is running')
+            self._sync_api = SyncApi(self._api, self._loop)
+        return self._sync_api
 
     def subscribe(self, event_name: str, func: Callable) -> None:
         self._bus.subscribe(event_name, func)
