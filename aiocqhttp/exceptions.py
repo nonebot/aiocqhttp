@@ -1,9 +1,5 @@
 class Error(Exception):
-    def __repr__(self):
-        return f'<{self.__class__.__name__}>'
-
-    def __str__(self):
-        return self.__repr__()
+    pass
 
 
 class ApiNotAvailable(Error):
@@ -23,6 +19,9 @@ class HttpFailed(ApiError):
     def __repr__(self):
         return f'<HttpFailed, status_code={self.status_code}>'
 
+    def __str__(self):
+        return self.__repr__()
+
 
 class ActionFailed(ApiError):
     """
@@ -41,10 +40,13 @@ class ActionFailed(ApiError):
     def __repr__(self):
         return f'<ActionFailed, retcode={self.retcode}>'
 
+    def __str__(self):
+        return self.__repr__()
+
 
 class NetworkError(Error, IOError):
     pass
 
 
-class TimingError(Error, RuntimeError):
+class TimingError(Error):
     pass
