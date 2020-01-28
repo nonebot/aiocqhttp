@@ -2,7 +2,8 @@ import asyncio
 import hmac
 import logging
 import re
-from typing import Dict, Any, Optional, AnyStr, Callable, Union, List
+from typing import (Dict, Any, Optional, AnyStr, Callable, Union, List,
+                    Awaitable)
 
 try:
     import ujson as json
@@ -11,7 +12,7 @@ except ImportError:
 
 from quart import Quart, request, abort, jsonify, websocket, Response
 
-from .api import HttpApi, WebSocketReverseApi, UnifiedApi, ResultStore
+from .api import Api, HttpApi, WebSocketReverseApi, UnifiedApi, ResultStore
 from .bus import EventBus
 from .exceptions import *
 from .message import Message, MessageSegment
@@ -48,7 +49,7 @@ class CQHttp:
                  access_token: Optional[str] = None,
                  secret: Optional[AnyStr] = None,
                  message_class: Optional[type] = None):
-        self.api = UnifiedApi()  # TODO: rename to _api
+        self._api = UnifiedApi()
         self._bus = EventBus()
         self._loop = None
 
@@ -67,18 +68,22 @@ class CQHttp:
                    access_token: Optional[str] = None,
                    secret: Optional[AnyStr] = None,
                    message_class: Optional[type] = None):
+        self._message_class = message_class
         self._access_token = access_token
         self._secret = secret
-        self._message_class = message_class
+        self._api._http_api = HttpApi(api_root, access_token)
         self._wsr_api_clients = {}  # connected wsr api clients
-        self.api._http_api = HttpApi(api_root, access_token)
-        self.api._wsr_api = WebSocketReverseApi(self._wsr_api_clients)
+        self._api._wsr_api = WebSocketReverseApi(self._wsr_api_clients)
 
     def _before_serving(self):
         self._loop = asyncio.get_running_loop()
 
     @property
-    def asgi(self) -> Quart:
+    def api(self) -> Api:
+        return self._api
+
+    @property
+    def asgi(self) -> Callable[[dict, Callable, Callable], Awaitable]:
         return self._server_app
 
     @property
@@ -90,7 +95,7 @@ class CQHttp:
         return self._server_app.logger
 
     @property
-    def loop(self) -> asyncio.AbstractEventLoop:
+    def loop(self) -> Optional[asyncio.AbstractEventLoop]:
         return self._loop
 
     def subscribe(self, event_name: str, func: Callable) -> None:
@@ -247,7 +252,7 @@ class CQHttp:
             payload.pop('comment', None)
             payload.pop('sender', None)
             try:
-                await self.api.call_action(
+                await self._api.call_action(
                     self_id=payload['self_id'],
                     action='.handle_quick_operation_async',
                     context=payload, operation=response
@@ -259,10 +264,10 @@ class CQHttp:
         self._server_app.run(host=host, port=port, *args, **kwargs)
 
     async def call_action(self, action: str, **params) -> Any:
-        return await self.api.call_action(action=action, **params)
+        return await self._api.call_action(action=action, **params)
 
     def __getattr__(self, item) -> Callable:
-        return self.api.__getattr__(item)
+        return self._api.__getattr__(item)
 
     async def send(self, event: Event,
                    message: Union[str, Dict[str, Any], List[Dict[str, Any]]],
