@@ -16,6 +16,7 @@ from .bus import EventBus
 from .exceptions import *
 from .message import Message, MessageSegment
 from .event import Event
+from .utils import ensure_async
 
 __all__ = [
     'CQHttp', 'Message', 'MessageSegment', 'Event'
@@ -26,11 +27,12 @@ def _deco_maker(type_: str) -> Callable:
     def deco_deco(self, arg: Optional[Union[str, Callable]] = None,
                   *sub_event_names: str) -> Callable:
         def deco(func: Callable) -> Callable:
+            handler = ensure_async(func)
             if isinstance(arg, str):
                 e = [type_ + '.' + e for e in [arg] + list(sub_event_names)]
-                self.on(*e)(func)
+                self.on(*e)(handler)
             else:
-                self.on(type_)(func)
+                self.on(type_)(handler)
             return func
 
         if isinstance(arg, Callable):
@@ -46,10 +48,12 @@ class CQHttp:
                  access_token: Optional[str] = None,
                  secret: Optional[AnyStr] = None,
                  message_class: Optional[type] = None):
-        self.api = UnifiedApi()
+        self.api = UnifiedApi()  # TODO: rename to _api
         self._bus = EventBus()
+        self._loop = None
 
         self._server_app = Quart(__name__)
+        self._server_app.before_serving(self._before_serving)
         self._server_app.add_url_rule('/', methods=['POST'],
                                       view_func=self._handle_http_event)
         for p in ('/ws', '/ws/event', '/ws/api'):
@@ -70,6 +74,9 @@ class CQHttp:
         self.api._http_api = HttpApi(api_root, access_token)
         self.api._wsr_api = WebSocketReverseApi(self._wsr_api_clients)
 
+    def _before_serving(self):
+        self._loop = asyncio.get_running_loop()
+
     @property
     def asgi(self) -> Quart:
         return self._server_app
@@ -81,6 +88,10 @@ class CQHttp:
     @property
     def logger(self) -> logging.Logger:
         return self._server_app.logger
+
+    @property
+    def loop(self) -> asyncio.AbstractEventLoop:
+        return self._loop
 
     def subscribe(self, event_name: str, func: Callable) -> None:
         self._bus.subscribe(event_name, func)
