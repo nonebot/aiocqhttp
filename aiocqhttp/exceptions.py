@@ -44,3 +44,7 @@ class ActionFailed(ApiError):
 
 class NetworkError(Error, IOError):
     pass
+
+
+class TimingError(Error, RuntimeError):
+    pass
