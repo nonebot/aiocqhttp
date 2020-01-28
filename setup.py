@@ -14,7 +14,7 @@ setup(
     description='CQHttp Python SDK with Asynchronous I/O',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    install_requires=['Quart~=0.10', 'aiohttp~=3.6'],
+    install_requires=['Quart>=0.10', 'aiohttp>=3.6'],
     extras_require={
         'all': ['ujson'],
     },
