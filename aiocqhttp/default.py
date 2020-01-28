@@ -17,5 +17,4 @@ run = default_bot.run
 send = default_bot.send
 api = default_bot.api
 
-# noinspection PyProtectedMember
 reconfigure_default_bot = default_bot._configure

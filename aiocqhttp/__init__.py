@@ -200,7 +200,6 @@ class CQHttp:
             self._remove_wsr_api_client()
 
     def _add_wsr_api_client(self) -> None:
-        # noinspection PyProtectedMember
         ws = websocket._get_current_object()
         self_id = websocket.headers['X-Self-ID']
         self._wsr_api_clients[self_id] = ws
