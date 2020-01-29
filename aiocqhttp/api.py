@@ -1,8 +1,12 @@
+"""
+此模块提供了 CQHTTP API 相关的接口类和实现类。
+"""
+
 import abc
 import asyncio
 import functools
 import sys
-from typing import Callable, Dict, Any, Optional, Union
+from typing import Callable, Dict, Any, Optional, Union, Awaitable
 
 try:
     import ujson as json
@@ -16,9 +20,17 @@ from quart.wrappers.request import Websocket
 from .exceptions import *
 from .utils import sync_wait
 
+__pdoc__ = {
+    'ResultStore': False,
+}
+
 
 class Api:
-    """API interface."""
+    """
+    API 接口类。
+
+    继承此类的具体实现类应实现 `call_action` 方法。
+    """
 
     def __getattr__(self, item: str) -> Callable:
         """Get a callable that sends the actual API request internally."""
@@ -26,7 +38,10 @@ class Api:
 
     @abc.abstractmethod
     async def call_action(self, action: str, **params) -> Any:
-        """Send API request to call the specified action."""
+        """
+        调用 CQHTTP API，`action` 为要调用的 API 动作名，`**params`
+        为 API 所需参数。
+        """
         pass
 
 
@@ -45,7 +60,11 @@ def _handle_api_result(result: Optional[Dict[str, Any]]) -> Any:
 
 
 class HttpApi(Api):
-    """Call APIs through HTTP."""
+    """
+    HTTP API 实现类。
+
+    实现通过 HTTP 调用 CQHTTP API。
+    """
 
     def __init__(self, api_root: Optional[str], access_token: Optional[str]):
         super().__init__()
@@ -86,7 +105,7 @@ class _SequenceGenerator:
 
 
 class ResultStore:
-    _futures = {}  # key: seq, value: asyncio.Future
+    _futures: Dict[int, asyncio.Future] = {}
 
     @classmethod
     def add(cls, result: Dict[str, Any]):
@@ -112,7 +131,11 @@ class ResultStore:
 
 
 class WebSocketReverseApi(Api):
-    """Call APIs through reverse WebSocket."""
+    """
+    反向 WebSocket API 实现类。
+
+    实现通过反向 WebSocket 调用 CQHTTP API。
+    """
 
     def __init__(self, connected_clients: Dict[str, Websocket]):
         super().__init__()
@@ -143,8 +166,9 @@ class WebSocketReverseApi(Api):
 
 class UnifiedApi(Api):
     """
-    Call APIs through different communication methods
-    depending on availability.
+    统一 API 实现类。
+
+    同时维护 `HttpApi` 和 `WebSocketReverseApi` 对象，根据可用情况，选择两者中的某个使用。
     """
 
     def __init__(self, http_api: Api = None, wsr_api: Api = None):
@@ -177,7 +201,14 @@ class UnifiedApi(Api):
 
 
 class SyncApi:
+    """
+    封装 `Api` 对象，使其可同步地调用。
+    """
+
     def __init__(self, async_api: Api, loop: asyncio.AbstractEventLoop):
+        """
+        `async_api` 参数为 `Api` 对象，`loop` 参数为用来执行 API 调用的 event loop。
+        """
         self._async_api = async_api
         self._loop = loop
 
@@ -186,6 +217,7 @@ class SyncApi:
         return functools.partial(self.call_action, item)
 
     def call_action(self, action: str, **params) -> Any:
+        """同步地调用 CQHTTP API。"""
         return sync_wait(
             coro=self._async_api.call_action(action, **params),
             loop=self._loop
@@ -193,12 +225,17 @@ class SyncApi:
 
 
 class LazyApi:
+    """
+    延迟获取 `Api` 或 `SyncApi` 对象。
+    """
+
     def __init__(self, api_getter: Callable[[], Union[Api, SyncApi]]):
         self._api_getter = api_getter
 
     def __getattr__(self, item: str) -> Callable:
         return functools.partial(self.call_action, item)
 
-    def call_action(self, action: str, **params) -> Any:
+    def call_action(self, action: str, **params) -> Union[Awaitable[Any], Any]:
+        """获取 `Api` 或 `SyncApi` 对象，并调用 CQHTTP API。"""
         api = self._api_getter()
         return api.call_action(action, **params)

@@ -1,3 +1,7 @@
+"""
+此模块提供事件总线相关类。
+"""
+
 import asyncio
 from collections import defaultdict
 from typing import Callable, List, Any

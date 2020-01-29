@@ -1,8 +1,17 @@
+"""
+此模块提供了消息相关类。
+"""
+
 import re
-from typing import Iterable, Dict, Tuple, Any
+from typing import Iterable, Dict, Tuple, Any, Optional
 
 
 def escape(s: str, *, escape_comma: bool = True) -> str:
+    """
+    对字符串进行 CQ 码转义。
+
+    ``escape_comma`` 参数控制是否转义逗号（``,``）。
+    """
     s = s.replace('&', '&amp;') \
         .replace('[', '&#91;') \
         .replace(']', '&#93;')
@@ -12,6 +21,7 @@ def escape(s: str, *, escape_comma: bool = True) -> str:
 
 
 def unescape(s: str) -> str:
+    """对字符串进行 CQ 码去转义。"""
     return s.replace('&#44;', ',') \
         .replace('&#91;', '[') \
         .replace('&#93;', ']') \
@@ -26,14 +36,31 @@ def _b2s(b: bool):
 
 
 class MessageSegment(dict):
+    """
+    消息段，即表示成字典的 CQ 码。
+
+    不建议手动构造消息段；建议使用此类的静态方法构造，例如：
+
+    ```py
+    at_seg = MessageSegment.at(10001000)
+    ```
+
+    可进行判等和加法操作，例如：
+
+    ```py
+    assert at_seg == MessageSegment.at(10001000)
+    msg: Message = at_seg + MessageSegment.face(14)
+    ```
+    """
+
     def __init__(self, d: Dict[str, Any] = None, *,
                  type_: str = None, data: Dict[str, str] = None):
         super().__init__()
         if isinstance(d, dict) and d.get('type'):
             self.update(d)
         elif type_:
-            self['type'] = type_
-            self['data'] = data or {}
+            self.type = type_
+            self.data = data
         else:
             raise ValueError('the "type" field cannot be None or empty')
 
@@ -50,17 +77,31 @@ class MessageSegment(dict):
     def __delitem__(self, key):
         raise NotImplementedError
 
-    def __getattr__(self, item):
-        try:
-            return self.__getitem__(item)
-        except KeyError:
-            raise AttributeError(f'the attribute "{item}" is not allowed')
+    @property
+    def type(self) -> str:
+        """
+        消息段类型，即 CQ 码功能名。
 
-    def __setattr__(self, key, value):
-        try:
-            return self.__setitem__(key, value)
-        except KeyError:
-            raise AttributeError(f'the attribute "{key}" is not allowed')
+        纯文本消息段的类型名为 ``text``。
+        """
+        return self['type']
+
+    @type.setter
+    def type(self, type_: str):
+        self['type'] = type_
+
+    @property
+    def data(self) -> Dict[str, str]:
+        """
+        消息段数据，即 CQ 码参数。
+
+        该字典内所有值都是未经 CQ 码转义的字符串。
+        """
+        return self['data']
+
+    @data.setter
+    def data(self, data: Optional[Dict[str, str]]):
+        self['data'] = data or {}
 
     def __str__(self):
         if self.type == 'text':
@@ -81,49 +122,63 @@ class MessageSegment(dict):
         return Message(self).__add__(other)
 
     @staticmethod
-    def text(text: str):
+    def text(text: str) -> 'MessageSegment':
+        """纯文本。"""
         return MessageSegment(type_='text', data={'text': text})
 
     @staticmethod
-    def emoji(id_: int):
+    def emoji(id_: int) -> 'MessageSegment':
+        """Emoji 表情。"""
         return MessageSegment(type_='emoji', data={'id': str(id_)})
 
     @staticmethod
-    def face(id_: int):
+    def face(id_: int) -> 'MessageSegment':
+        """QQ 表情。"""
         return MessageSegment(type_='face', data={'id': str(id_)})
 
     @staticmethod
-    def image(file: str):
+    def image(file: str) -> 'MessageSegment':
+        """图片。"""
         return MessageSegment(type_='image', data={'file': file})
 
     @staticmethod
-    def record(file: str, magic: bool = False):
-        return MessageSegment(type_='record',
-                              data={'file': file, 'magic': _b2s(magic)})
+    def record(file: str, magic: bool = False) -> 'MessageSegment':
+        """语音。"""
+        return MessageSegment(type_='record', data={
+            'file': file,
+            'magic': _b2s(magic)
+        })
 
     @staticmethod
-    def at(user_id: int):
+    def at(user_id: int) -> 'MessageSegment':
+        """@某人。"""
         return MessageSegment(type_='at', data={'qq': str(user_id)})
 
     @staticmethod
-    def rps():
+    def rps() -> 'MessageSegment':
+        """猜拳魔法表情。"""
         return MessageSegment(type_='rps')
 
     @staticmethod
-    def dice():
+    def dice() -> 'MessageSegment':
+        """掷骰子魔法表情。"""
         return MessageSegment(type_='dice')
 
     @staticmethod
-    def shake():
+    def shake() -> 'MessageSegment':
+        """戳一戳。"""
         return MessageSegment(type_='shake')
 
     @staticmethod
-    def anonymous(ignore_failure: bool = False):
+    def anonymous(ignore_failure: bool = False) -> 'MessageSegment':
+        """匿名发消息。"""
         return MessageSegment(type_='anonymous',
                               data={'ignore': _b2s(ignore_failure)})
 
     @staticmethod
-    def share(url: str, title: str, content: str = '', image_url: str = ''):
+    def share(url: str, title: str, content: str = '',
+              image_url: str = '') -> 'MessageSegment':
+        """链接分享。"""
         return MessageSegment(type_='share', data={
             'url': url,
             'title': title,
@@ -132,18 +187,25 @@ class MessageSegment(dict):
         })
 
     @staticmethod
-    def contact_user(id_: int):
-        return MessageSegment(type_='contact',
-                              data={'type': 'qq', 'id': str(id_)})
+    def contact_user(id_: int) -> 'MessageSegment':
+        """推荐好友。"""
+        return MessageSegment(type_='contact', data={
+            'type': 'qq',
+            'id': str(id_)
+        })
 
     @staticmethod
-    def contact_group(id_: int):
-        return MessageSegment(type_='contact',
-                              data={'type': 'group', 'id': str(id_)})
+    def contact_group(id_: int) -> 'MessageSegment':
+        """推荐群。"""
+        return MessageSegment(type_='contact', data={
+            'type': 'group',
+            'id': str(id_)
+        })
 
     @staticmethod
     def location(latitude: float, longitude: float, title: str = '',
-                 content: str = ''):
+                 content: str = '') -> 'MessageSegment':
+        """位置。"""
         return MessageSegment(type_='location', data={
             'lat': str(latitude),
             'lon': str(longitude),
@@ -152,13 +214,24 @@ class MessageSegment(dict):
         })
 
     @staticmethod
-    def music(type_: str, id_: int):
-        return MessageSegment(type_='music',
-                              data={'type': type_, 'id': str(id_)})
+    def music(type_: str, id_: int,
+              style: Optional[int] = None) -> 'MessageSegment':
+        """音乐"""
+        if style is not None:
+            return MessageSegment(type_='music', data={
+                'type': type_,
+                'id': str(id_),
+                'style': str(style)
+            })
+        return MessageSegment(type_='music', data={
+            'type': type_,
+            'id': str(id_)
+        })
 
     @staticmethod
     def music_custom(url: str, audio_url: str, title: str, content: str = '',
-                     image_url: str = ''):
+                     image_url: str = '') -> 'MessageSegment':
+        """音乐自定义分享。"""
         return MessageSegment(type_='music', data={
             'type': 'custom',
             'url': url,
@@ -170,7 +243,12 @@ class MessageSegment(dict):
 
 
 class Message(list):
+    """
+    消息，即消息段列表。
+    """
+
     def __init__(self, msg: Any = None, *args, **kwargs):
+        """``msg`` 参数为要转换为 `Message` 对象的字符串、列表或字典。"""
         super().__init__(*args, **kwargs)
         try:
             if isinstance(msg, (list, str)):
@@ -232,6 +310,7 @@ class Message(list):
         raise ValueError('the addend is not a valid message')
 
     def append(self, obj: Any) -> Any:
+        """在消息末尾追加消息段。"""
         try:
             if isinstance(obj, MessageSegment):
                 if self and self[-1].type == 'text' and obj.type == 'text':
@@ -246,6 +325,7 @@ class Message(list):
         raise ValueError('the object is not a valid message segment')
 
     def extend(self, msg: Any) -> Any:
+        """在消息末尾追加消息（字符串或消息段列表）。"""
         try:
             if isinstance(msg, str):
                 msg = self._split_iter(msg)
@@ -259,10 +339,9 @@ class Message(list):
 
     def reduce(self) -> None:
         """
-        Remove redundant segments.
+        化简消息，即去除多余消息段、合并相邻纯文本消息段。
 
-        Since this class is implemented based on list,
-        this method may require O(n) time.
+        由于 `Message` 类基于 `list`，此方法时间复杂度为 O(n)。
         """
         idx = 0
         while idx < len(self):
@@ -275,10 +354,9 @@ class Message(list):
 
     def extract_plain_text(self, reduce: bool = False) -> str:
         """
-        Extract text segments from the message, joined by single space.
+        提取消息中的所有纯文本消息段，合并，中间用空格分隔。
 
-        :param reduce: reduce the message before extracting
-        :return: the joined string
+        ``reduce`` 参数控制是否在提取之前化简消息。
         """
         if reduce:
             self.reduce()

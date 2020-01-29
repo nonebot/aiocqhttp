@@ -1,3 +1,9 @@
+"""
+此模块主要提供了 `aiocqhttp.CQHttp` 类（类似于 Flask 的
+`Flask` 类和 Quart 的 `Quart` 类）；除此之外，还从 `message`、`event`、`exceptions`
+模块导入了一些常用的类、模块变量和函数，以便于使用。
+"""
+
 import asyncio
 import hmac
 import logging
@@ -21,20 +27,22 @@ from .event import Event
 from .utils import ensure_async
 
 __all__ = [
-    'CQHttp', 'Message', 'MessageSegment', 'Event'
+    'CQHttp', 'Message', 'MessageSegment', 'Event',
 ]
+__all__ += exceptions.__all__
+
+__pdoc__ = {}
 
 
 def _deco_maker(type_: str) -> Callable:
     def deco_deco(self, arg: Optional[Union[str, Callable]] = None,
                   *sub_event_names: str) -> Callable:
         def deco(func: Callable) -> Callable:
-            handler = ensure_async(func)
             if isinstance(arg, str):
                 e = [type_ + '.' + e for e in [arg] + list(sub_event_names)]
-                self.on(*e)(handler)
+                self.on(*e)(func)
             else:
-                self.on(type_)(handler)
+                self.on(type_)(func)
             return func
 
         if isinstance(arg, Callable):
@@ -44,7 +52,32 @@ def _deco_maker(type_: str) -> Callable:
     return deco_deco
 
 
-class CQHttp:
+class CQHttp(Api):
+    """
+    CQHTTP 机器人的主类，负责控制整个机器人的运行、事件处理函数的注册、与 CQHTTP
+    的连接、CQHTTP API 的调用等。
+
+    内部维护了一个 `Quart` 对象作为 web 服务器，提供 HTTP 协议的 ``/`` 和 WebSocket
+    协议的 ``/ws/``、``/ws/api/``、``/ws/event/`` 端点供 CQHTTP 连接。
+
+    由于基类 `api.Api` 重写了 `__getattr__` 魔术方法，因此可以在 bot 对象上直接调用
+    CQHTTP API，例如：
+
+    ```py
+    await bot.send_private_msg(user_id=10001000, message='你好')
+    friends = await bot.get_friend_list()
+    ```
+
+    也可以通过 `CQHttp.call_action` 方法调用 API，例如：
+
+    ```py
+    await bot.call_action('set_group_whole_ban', group_id=10010)
+    ```
+
+    两种调用 API 的方法最终都通过 `CQHttp` 内部维护的 `api.Api` 接口类的具体实现类来向
+    CQHTTP 发送请求并获取调用结果。
+    """
+
     def __init__(self,
                  api_root: Optional[str] = None,
                  access_token: Optional[str] = None,
@@ -82,26 +115,43 @@ class CQHttp:
 
     @property
     def asgi(self) -> Callable[[dict, Callable, Callable], Awaitable]:
+        """ASGI app 对象，可使用支持 ASGI 的 web 服务器软件部署。"""
         return self._server_app
 
     @property
     def server_app(self) -> Quart:
+        """Quart app 对象，可用来对 Quart 的运行做精细控制，或添加新的路由等。"""
         return self._server_app
 
     @property
     def logger(self) -> logging.Logger:
+        """Quart app 的 logger，等价于 ``bot.server_app.logger``。"""
         return self._server_app.logger
 
     @property
     def loop(self) -> Optional[asyncio.AbstractEventLoop]:
+        """Quart app 所在的 event loop，在 app 运行之前为 `None`。"""
         return self._loop
 
     @property
     def api(self) -> Api:
+        """`api.Api` 对象，用于调用 CQHTTP API。"""
         return self._api
 
     @property
     def sync(self) -> SyncApi:
+        """
+        `api.SyncApi` 对象，用于同步地调用 CQHTTP API，例如：
+
+        ```py
+        @bot.on_message('group')
+        def sync_handler(event):
+            user_info = bot.sync.get_group_member_info(
+                group_id=event.group_id, user_id=event.user_id
+            )
+            ...
+        ```
+        """
         if not self._sync_api:
             if not self._loop:
                 raise TimingError('attempt to access sync api '
@@ -109,19 +159,92 @@ class CQHttp:
             self._sync_api = SyncApi(self._api, self._loop)
         return self._sync_api
 
+    def run(self, host: str = None, port: int = None, *args, **kwargs) -> None:
+        """运行 bot 对象，实际就是运行 Quart app，参数与 `Quart.run` 一致。"""
+        self._server_app.run(host=host, port=port, *args, **kwargs)
+
     async def call_action(self, action: str, **params) -> Any:
+        """
+        通过内部维护的 `api.Api` 具体实现类调用 CQHTTP API，``action``
+        为要调用的 API 动作名，``**params`` 为 API 所需参数。
+        """
         return await self._api.call_action(action=action, **params)
 
-    def __getattr__(self, item) -> Callable:
-        return self._api.__getattr__(item)
+    async def send(self, event: Event,
+                   message: Union[str, Dict[str, Any], List[Dict[str, Any]]],
+                   **kwargs) -> Optional[Dict[str, Any]]:
+        """
+        向触发事件的主体发送消息。
+
+        ``event`` 参数为事件对象，``message`` 参数为要发送的消息。可额外传入 ``at_sender``
+        命名参数用于控制是否 at 事件的触发者，默认为 `False`。其它命名参数作为
+        CQHTTP API ``send_msg`` 的参数直接传递。
+        """
+        at_sender = kwargs.pop('at_sender', False) and 'user_id' in event
+
+        params = event.copy()
+        params['message'] = message
+        params.pop('raw_message', None)  # avoid wasting bandwidth
+        params.pop('comment', None)
+        params.pop('sender', None)
+        params.update(kwargs)
+
+        if 'message_type' not in params:
+            if 'group_id' in params:
+                params['message_type'] = 'group'
+            elif 'discuss_id' in params:
+                params['message_type'] = 'discuss'
+            elif 'user_id' in params:
+                params['message_type'] = 'private'
+
+        if at_sender and params['message_type'] != 'private':
+            params['message'] = MessageSegment.at(params['user_id']) + \
+                                MessageSegment.text(' ') + params['message']
+
+        return await self.send_msg(**params)
 
     def subscribe(self, event_name: str, func: Callable) -> None:
-        self._bus.subscribe(event_name, func)
+        """注册事件处理函数。"""
+        self._bus.subscribe(event_name, ensure_async(func))
 
     def unsubscribe(self, event_name: str, func: Callable) -> None:
+        """取消注册事件处理函数。"""
         self._bus.unsubscribe(event_name, func)
 
     def on(self, *event_names: str) -> Callable:
+        """
+        注册事件处理函数，用作装饰器，例如：
+
+        ```py
+        @bot.on('notice.group_decrease', 'notice.group_increase')
+        async def handler(event):
+            pass
+        ```
+
+        参数为要注册的事件名，格式是点号分割的各级事件类型，见 `Event.name`。
+
+        可以多次调用，一个函数可作为多个事件的处理函数，一个事件也可以有多个处理函数。
+
+        可以按不同粒度注册处理函数，例如：
+
+        ```py
+        @bot.on('message')
+        async def handle_message(event):
+            pass
+
+        @bot.on('message.private')
+        async def handle_private_message(event):
+            pass
+
+        @bot.on('message.private.friend')
+        async def handle_friend_private_message(event):
+            pass
+        ```
+
+        当收到好友私聊消息时，会首先运行 ``handle_friend_private_message``，然后运行
+        ``handle_private_message``，最后运行 ``handle_message``。
+        """
+
         def deco(func: Callable) -> Callable:
             for name in event_names:
                 self.subscribe(name, func)
@@ -130,9 +253,40 @@ class CQHttp:
         return deco
 
     on_message = _deco_maker('message')
+    __pdoc__['CQHttp.on_message'] = """
+    注册消息事件处理函数，用作装饰器，例如：
+    
+    ```
+    @bot.on_message('private')
+    async def handler(event):
+        pass
+    ```
+    
+    这等价于：
+    
+    ```
+    @bot.on('message.private')
+    async def handler(event):
+        pass
+    ```
+    
+    也可以不加参数，表示注册为所有消息事件的处理函数，例如：
+    
+    ```
+    @bot.on_message
+    async def handler(event):
+        pass
+    ```
+    """
+
     on_notice = _deco_maker('notice')
+    __pdoc__['CQHttp.on_notice'] = "注册通知事件处理函数，用作装饰器，用法同上。"
+
     on_request = _deco_maker('request')
+    __pdoc__['CQHttp.on_request'] = "注册请求事件处理函数，用作装饰器，用法同上。"
+
     on_meta_event = _deco_maker('meta_event')
+    __pdoc__['CQHttp.on_meta_event'] = "注册元事件处理函数，用作装饰器，用法同上。"
 
     async def _handle_http_event(self) -> Response:
         if self._secret:
@@ -276,38 +430,3 @@ class CQHttp:
                 )
             except Error:
                 pass
-
-    def run(self, host: str = None, port: int = None, *args, **kwargs) -> None:
-        self._server_app.run(host=host, port=port, *args, **kwargs)
-
-    async def send(self, event: Event,
-                   message: Union[str, Dict[str, Any], List[Dict[str, Any]]],
-                   **kwargs) -> Optional[Dict[str, Any]]:
-        at_sender = kwargs.pop('at_sender', False) and 'user_id' in event
-
-        params = event.copy()
-        params['message'] = message
-        params.pop('raw_message', None)  # avoid wasting bandwidth
-        params.pop('comment', None)
-        params.pop('sender', None)
-        params.update(kwargs)
-
-        if 'message_type' not in params:
-            if 'group_id' in params:
-                params['message_type'] = 'group'
-            elif 'discuss_id' in params:
-                params['message_type'] = 'discuss'
-            elif 'user_id' in params:
-                params['message_type'] = 'private'
-
-        if at_sender and params['message_type'] != 'private':
-            params['message'] = MessageSegment.at(params['user_id']) + \
-                                MessageSegment.text(' ') + params['message']
-
-        return await self.send_msg(**params)
-
-
-from . import default
-from .default import *
-
-__all__ += default.__all__
