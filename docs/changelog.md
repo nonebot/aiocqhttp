@@ -1,6 +1,6 @@
 # 更新日志
 
-## next
+## v1.0.0
 
 - `on_*` 装饰器支持将同步函数注册为事件处理函数，将在 asyncio 的默认 executor 中运行（可通过 `loop.set_default_executor` 修改）
 - `CQHttp` 类新增 `sync` 属性，可用于在同步函数中调用 CQHTTP API 
