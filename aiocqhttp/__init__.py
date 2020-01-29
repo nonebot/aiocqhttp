@@ -83,6 +83,24 @@ class CQHttp(Api):
                  access_token: Optional[str] = None,
                  secret: Optional[AnyStr] = None,
                  message_class: Optional[type] = None):
+        """
+        ``api_root`` 参数为 CQHTTP API 的 URL，``access_token`` 和
+        ``secret`` 参数为 CQHTTP 配置中填写的对应项。
+
+        ``message_class`` 参数为要用来对 `Event.message` 进行转换的消息类，可使用
+        `Message`，例如：
+
+        ```py
+        from aiocqhttp import CQHttp, Message
+
+        bot = CQHttp(message_class=Message)
+
+        @bot.on_message
+        async def handler(event):
+            # 这里 event.message 将被转换为 Message 对象
+            assert isinstance(event.message, Message)
+        ```
+        """
         self._api = UnifiedApi()
         self._sync_api = None
         self._bus = EventBus()
