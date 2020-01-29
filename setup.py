@@ -17,7 +17,6 @@ setup(
     install_requires=['Quart>=0.10', 'aiohttp>=3.6'],
     extras_require={
         'all': ['ujson'],
-        'dev': ['pdoc3'],
     },
     python_requires='>=3.7',
     platforms='any',
