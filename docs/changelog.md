@@ -3,7 +3,7 @@
 ## next
 
 - `on_*` 装饰器支持将同步函数注册为事件处理函数，将在 asyncio 的默认 executor 中运行（可通过 `loop.set_default_executor` 修改）
-- 新增默认 `CQHttp` 实例 `aiocqhttp.default_bot`，可通过 `aiocqhttp.on_message` 等装饰器直接注册事件处理函数、通过 `aiocqhttp.run` 运行实例、通过 `aiocqhttp.send` 发送消息、通过 `aiocqhttp.api` 调用 CQHTTP 的 API 等
+- 新增默认 `CQHttp` 实例 `aiocqhttp.default.default_bot`，可通过 `aiocqhttp.default.on_message` 等装饰器直接注册事件处理函数、通过 `aiocqhttp.default.run` 运行实例、通过 `aiocqhttp.default.send` 发送消息、通过 `aiocqhttp.default.api` 调用 CQHTTP 的 API 等
 - 事件处理函数的唯一参数改为 `aiocqhttp.Event` 类，提供属性方便获取事件数据，此类基于 `dict`，因此兼容现有代码
 - `CQHttp` 类初始化器移除 `enable_http_post` 命名参数
 - `CQHttp` 类初始化器参数全部改为命名参数
