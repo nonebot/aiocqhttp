@@ -74,8 +74,8 @@ class CQHttp(Api):
     await bot.call_action('set_group_whole_ban', group_id=10010)
     ```
 
-    两种调用 API 的方法最终都通过 `CQHttp` 内部维护的 `api.Api` 接口类的具体实现类来向
-    CQHTTP 发送请求并获取调用结果。
+    两种调用 API 的方法最终都通过 `CQHttp.api` 属性来向 CQHTTP
+    发送请求并获取调用结果。
     """
 
     def __init__(self,
@@ -97,7 +97,7 @@ class CQHttp(Api):
 
         @bot.on_message
         async def handler(event):
-            # 这里 event.message 将被转换为 Message 对象
+            # 这里 event.message 已经被转换为 Message 对象
             assert isinstance(event.message, Message)
         ```
         """
