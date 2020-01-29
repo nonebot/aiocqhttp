@@ -110,3 +110,5 @@ venv.bak/
 .idea
 .vscode
 dev.py
+docs/module/*
+!docs/module/.gitkeep
