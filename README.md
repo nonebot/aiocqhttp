@@ -1,4 +1,4 @@
-# CQHTTP Python SDK with Asynchronous I/O
+# CQHTTP Python Async SDK
 
 [![License](https://img.shields.io/github/license/richardchien/python-aiocqhttp.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/aiocqhttp.svg)](https://pypi.python.org/pypi/aiocqhttp)
