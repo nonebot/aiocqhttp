@@ -78,11 +78,12 @@ class CQHttp(Api):
     发送请求并获取调用结果。
     """
 
-    def __init__(self,
+    def __init__(self, *,
                  api_root: Optional[str] = None,
                  access_token: Optional[str] = None,
                  secret: Optional[AnyStr] = None,
-                 message_class: Optional[type] = None):
+                 message_class: Optional[type] = None,
+                 **kwargs):
         """
         ``api_root`` 参数为 CQHTTP API 的 URL，``access_token`` 和
         ``secret`` 参数为 CQHTTP 配置中填写的对应项。
