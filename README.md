@@ -1,6 +1,6 @@
 # CQHTTP Python Async SDK
 
-[![License](https://img.shields.io/github/license/richardchien/python-aiocqhttp.svg)](LICENSE)
+[![License](https://img.shields.io/github/license/cqmoe/python-aiocqhttp.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/aiocqhttp.svg)](https://pypi.python.org/pypi/aiocqhttp)
 ![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)
 ![CQHTTP Version](https://img.shields.io/badge/cqhttp-4.8+-black.svg)
@@ -13,7 +13,7 @@ CQHTTP Python Async SDK 是 [酷Q](https://cqp.cc) 的 [CQHTTP 插件](https://c
 
 本 SDK 要求使用 Python 3.7 或更高版本、CQHTTP v4.8 或更高版本。
 
-CQHTTP Python SDK 同步版本见 [`python-cqhttp`](https://github.com/richardchien/python-cqhttp)。
+CQHTTP Python SDK 同步版本见 [`python-cqhttp`](https://github.com/cqmoe/python-cqhttp)。
 
 ## 文档
 
@@ -21,4 +21,4 @@ CQHTTP Python SDK 同步版本见 [`python-cqhttp`](https://github.com/richardch
 
 ## 遇到问题
 
-如果在使用本 SDK 时遇到任何问题，请 [提交 issue](https://github.com/richardchien/python-aiocqhttp/issues/new)。
+如果在使用本 SDK 时遇到任何问题，请 [提交 issue](https://github.com/cqmoe/python-aiocqhttp/issues/new)，也欢迎参与项目开发，具体流程请参考 [贡献指南](CONTRIBUTING.md)。
