@@ -53,8 +53,9 @@ class MessageSegment(dict):
     ```
     """
 
-    def __init__(self, d: Dict[str, Any] = None, *,
-                 type_: str = None, data: Dict[str, str] = None):
+    def __init__(self, d: Optional[Dict[str, Any]] = None, *,
+                 type_: Optional[str] = None,
+                 data: Optional[Dict[str, str]] = None):
         super().__init__()
         if isinstance(d, dict) and d.get('type'):
             self.update(d)

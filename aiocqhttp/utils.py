@@ -15,8 +15,8 @@ __pdoc__ = {
 }
 
 
-def run_sync(func: Callable[..., Any]) -> Callable[
-    ..., Coroutine[Any, None, None]]:
+def run_sync(
+        func: Callable[..., Any]) -> Callable[..., Coroutine[Any, None, None]]:
     """Ensure that the sync function is run within the event loop.
 
     If the *func* is not a coroutine it will be wrapped such that
@@ -39,7 +39,6 @@ def run_sync(func: Callable[..., Any]) -> Callable[
         else:
             return result
 
-    _wrapper._quart_async_wrapper = True
     return _wrapper
 
 

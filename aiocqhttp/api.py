@@ -49,7 +49,7 @@ def _handle_api_result(result: Optional[Dict[str, Any]]) -> Any:
     """
     Retrieve 'data' field from the API result object.
 
-    :param result: API result that received from HTTP API
+    :param result: API result that received from CQHTTP
     :return: the 'data' field in result object
     :raise ActionFailed: the 'status' field is 'failed'
     """
