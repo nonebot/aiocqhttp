@@ -7,7 +7,7 @@
 ```bash
 git clone git@github.com:YOUR_USERNAME/python-aiocqhttp
 cd python-aiocqhttp
-pip3 install -e .   # 注意点号
+pip install -e .   # 注意点号
 ```
 
 ## 测试
