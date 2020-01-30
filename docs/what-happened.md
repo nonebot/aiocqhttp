@@ -29,6 +29,8 @@ M1 处首先创建了 `aiocqhttp.CQHttp` 类的对象 `bot`。
 
 使用 HTTP 通信时，需要传入 `api_root` 参数是因为 `bot.send` 需要主动调用 CQHTTP API，它需要知道 CQHTTP「在哪」。
 
+使用反向 WebSocket 通信时，可以有多个 CQHTTP 同时连接到一个 `bot`，`bot.send` 会自动选择对应的账号发送。
+
 ## 事件处理
 
 M2 处通过 `@bot.on_message('private')` 装饰器注册了 [私聊消息事件](https://cqhttp.cc/docs/#/Post?id=私聊消息) 的处理函数。
@@ -52,6 +54,16 @@ await bot.set_group_ban(group_id=10010, user_id=10001000)
 
 credentials = await bot.get_credentials(domain='qun.qq.com')
 ```
+
+<Note>
+
+如果有多个 CQHTTP 连接，可能需要在调用 API 时增加 `self_id` 参数以指定要调用的机器人账号，例如：
+
+```python
+await bot.get_friend_list(self_id=event.self_id)
+```
+
+</Note>
 
 调用 API 时需向 CQHTTP 发出请求，这一步可能出错：
 
@@ -77,7 +89,7 @@ M5 处事件处理函数返回了一个字典，这会被 SDK 序列化为 JSON 
 
 ## 运行
 
-M6 处调用 `bot.run` 运行了 bot 后端，该方法是 Quart 对象的 `run` 方法的简单封装，可直接传入更多参数，参数会直接进入 `Quart.run`。
+M6 处调用 `bot.run` 运行了 bot 后端，该方法是 Quart 对象的 `run` 方法的简单封装，可直接传入更多参数，参数会直接进入 [`Quart.run`](https://pgjones.gitlab.io/quart/source/quart.html#quart.Quart.run)。
 
 ## 更多
 
