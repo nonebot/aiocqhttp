@@ -21,13 +21,16 @@ from quart import Quart, request, abort, jsonify, websocket, Response
 from .api import (Api, SyncApi, HttpApi, WebSocketReverseApi, UnifiedApi,
                   ResultStore)
 from .bus import EventBus
-from .exceptions import *
-from .message import Message, MessageSegment
+from .exceptions import Error, TimingError
 from .event import Event
+from .message import Message, MessageSegment
 from .utils import ensure_async
 
+from . import exceptions
+from .exceptions import *  # noqa: F401, F403
+
 __all__ = [
-    'CQHttp', 'Message', 'MessageSegment', 'Event',
+    'CQHttp', 'Event', 'Message', 'MessageSegment',
 ]
 __all__ += exceptions.__all__
 
@@ -274,23 +277,23 @@ class CQHttp(Api):
     on_message = _deco_maker('message')
     __pdoc__['CQHttp.on_message'] = """
     注册消息事件处理函数，用作装饰器，例如：
-    
+
     ```
     @bot.on_message('private')
     async def handler(event):
         pass
     ```
-    
+
     这等价于：
-    
+
     ```
     @bot.on('message.private')
     async def handler(event):
         pass
     ```
-    
+
     也可以不加参数，表示注册为所有消息事件的处理函数，例如：
-    
+
     ```
     @bot.on_message
     async def handler(event):

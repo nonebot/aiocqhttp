@@ -17,7 +17,7 @@ import aiohttp
 from quart import websocket as event_ws
 from quart.wrappers.request import Websocket
 
-from .exceptions import *
+from .exceptions import ActionFailed, ApiNotAvailable, HttpFailed, NetworkError
 from .utils import sync_wait
 
 __pdoc__ = {

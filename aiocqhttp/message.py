@@ -256,10 +256,8 @@ class Message(list):
                 self.extend(msg)
             elif isinstance(msg, dict):
                 self.append(msg)
-            return
-        except:
-            pass
-        raise ValueError('the msg argument is not recognizable')
+        except ValueError:
+            raise ValueError('the msg argument is not recognizable')
 
     @staticmethod
     def _split_iter(msg_str: str) -> Iterable[MessageSegment]:
@@ -306,9 +304,8 @@ class Message(list):
             elif isinstance(other, str):
                 result.extend(Message._split_iter(other))
             return result
-        except:
-            pass
-        raise ValueError('the addend is not a valid message')
+        except ValueError:
+            raise ValueError('the addend is not a valid message')
 
     def append(self, obj: Any) -> Any:
         """在消息末尾追加消息段。"""
@@ -321,9 +318,8 @@ class Message(list):
             else:
                 self.append(MessageSegment(obj))
             return self
-        except:
-            pass
-        raise ValueError('the object is not a valid message segment')
+        except ValueError:
+            raise ValueError('the object is not a valid message segment')
 
     def extend(self, msg: Any) -> Any:
         """在消息末尾追加消息（字符串或消息段列表）。"""
@@ -334,9 +330,8 @@ class Message(list):
             for seg in msg:
                 self.append(seg)
             return self
-        except:
-            pass
-        raise ValueError('the object is not a valid message')
+        except ValueError:
+            raise ValueError('the object is not a valid message')
 
     def reduce(self) -> None:
         """
