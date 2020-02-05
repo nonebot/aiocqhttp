@@ -1,21 +1,24 @@
 from aiocqhttp import CQHttp, ApiError, Event
 
-bot = CQHttp(api_root='http://127.0.0.1:5700/',
-             access_token='123',
-             secret='abc')
+bot = CQHttp(
+    api_root='http://127.0.0.1:5700/',  # 如果使用反向 WebSocket，这里不需要传入
+    access_token='123',  # 应与 CQHTTP 配置中一致，如果没填，这里不需要传入
+    secret='abc',  # 应与 CQHTTP 配置中一致，如果没填，这里不需要传入
+)
 
 
 @bot.on_message
 # 上面这句等价于 @bot.on('message')
 async def handle_msg(event: Event):
     try:
-        # 下面这句等价于 bot.send_private_msg(user_id=event.user_id,
-        #                                  message='你好呀，下面一条是你刚刚发的：')
+        # await bot.send_private_msg(user_id=event.user_id,
+        #                            message='你好呀，下面一条是你刚刚发的：')
+        # 上下两句等价
         await bot.send(event, '你好呀，下面一条是你刚刚发的：')
     except ApiError:
         pass
 
-    # 返回给 HTTP API 插件，走快速回复途径
+    # 返回给 CQHTTP 插件，走快速回复途径
     return {'reply': event.message, 'at_sender': False}
 
 
