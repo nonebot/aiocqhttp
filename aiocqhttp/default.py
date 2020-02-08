@@ -3,7 +3,7 @@
 """
 
 from . import CQHttp
-from .api import LazyApi
+from .api_impl import LazyApi
 
 __all__ = [
     'default_bot', 'default_server_app', 'api', 'sync_api',

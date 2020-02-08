@@ -18,8 +18,8 @@ except ImportError:
 
 from quart import Quart, request, abort, jsonify, websocket, Response
 
-from .api import (Api, SyncApi, HttpApi, WebSocketReverseApi, UnifiedApi,
-                  ResultStore)
+from .api_impl import (AsyncApi, SyncApi, HttpApi, WebSocketReverseApi,
+                       UnifiedApi, ResultStore)
 from .bus import EventBus
 from .exceptions import Error, TimingError
 from .event import Event
@@ -55,7 +55,7 @@ def _deco_maker(type_: str) -> Callable:
     return deco_deco
 
 
-class CQHttp(Api):
+class CQHttp(AsyncApi):
     """
     CQHTTP 机器人的主类，负责控制整个机器人的运行、事件处理函数的注册、与 CQHTTP
     的连接、CQHTTP API 的调用等。
@@ -63,8 +63,8 @@ class CQHttp(Api):
     内部维护了一个 `Quart` 对象作为 web 服务器，提供 HTTP 协议的 ``/`` 和 WebSocket
     协议的 ``/ws/``、``/ws/api/``、``/ws/event/`` 端点供 CQHTTP 连接。
 
-    由于基类 `api.Api` 重写了 `__getattr__` 魔术方法，因此可以在 bot 对象上直接调用
-    CQHTTP API，例如：
+    由于基类 `api.AsyncApi` 继承了 `api.Api` 的 `__getattr__` 魔术方法，因此可以在
+    bot 对象上直接调用 CQHTTP API，例如：
 
     ```py
     await bot.send_private_msg(user_id=10001000, message='你好')
@@ -156,8 +156,8 @@ class CQHttp(Api):
         return self._loop
 
     @property
-    def api(self) -> Api:
-        """`api.Api` 对象，用于调用 CQHTTP API。"""
+    def api(self) -> AsyncApi:
+        """`api.AsyncApi` 对象，用于异步地调用 CQHTTP API。"""
         return self._api
 
     @property
@@ -187,7 +187,7 @@ class CQHttp(Api):
 
     async def call_action(self, action: str, **params) -> Any:
         """
-        通过内部维护的 `api.Api` 具体实现类调用 CQHTTP API，``action``
+        通过内部维护的 `api.AsyncApi` 具体实现类调用 CQHTTP API，``action``
         为要调用的 API 动作名，``**params`` 为 API 所需参数。
         """
         return await self._api.call_action(action=action, **params)
