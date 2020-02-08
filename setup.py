@@ -18,12 +18,15 @@ setup(
     extras_require={
         'all': ['ujson'],
     },
+    package_data={
+        "": ["*.pyi"],
+    },
     python_requires='>=3.7',
     platforms='any',
-    classifiers=(
+    classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Framework :: Robot Framework',
-    ),
+    ],
 )
