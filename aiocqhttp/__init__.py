@@ -132,7 +132,7 @@ class CQHttp(AsyncApi):
         self._wsr_api_clients = {}  # connected wsr api clients
         self._api._wsr_api = WebSocketReverseApi(self._wsr_api_clients)
 
-    def _before_serving(self):
+    async def _before_serving(self):
         self._loop = asyncio.get_running_loop()
 
     @property
