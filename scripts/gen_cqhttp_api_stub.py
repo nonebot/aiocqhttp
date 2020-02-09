@@ -123,7 +123,7 @@ for api in api_list:
     else:
         api.ret = 'Any'
 
-os.chdir(os.path.dirname(os.path.dirname(__file__)))
+os.chdir(os.path.dirname(os.path.dirname(__file__)) or '.')
 
 with open(os.path.join('scripts', 'api.pyi.template'),
           'r', encoding='utf-8') as f:

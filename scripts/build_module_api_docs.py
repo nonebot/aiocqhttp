@@ -1,7 +1,7 @@
 import os
 import sys
 
-os.chdir(os.path.dirname(os.path.dirname(__file__)))
+os.chdir(os.path.dirname(os.path.dirname(__file__)) or '.')
 
 os.system(sys.executable +
           ' -m pdoc'
