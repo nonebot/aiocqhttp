@@ -1,6 +1,6 @@
 """
-此模块主要提供了 `aiocqhttp.CQHttp` 类（类似于 Flask 的
-`Flask` 类和 Quart 的 `Quart` 类）；除此之外，还从 `message`、`event`、`exceptions`
+此模块主要提供了 `CQHttp` 类（类似于 Flask 的 `Flask` 类和 Quart 的 `Quart`
+类）；除此之外，还从 `message`、`event`、`exceptions`
 模块导入了一些常用的类、模块变量和函数，以便于使用。
 """
 
@@ -63,8 +63,8 @@ class CQHttp(AsyncApi):
     内部维护了一个 `Quart` 对象作为 web 服务器，提供 HTTP 协议的 ``/`` 和 WebSocket
     协议的 ``/ws/``、``/ws/api/``、``/ws/event/`` 端点供 CQHTTP 连接。
 
-    由于基类 `api.AsyncApi` 继承了 `api.Api` 的 `__getattr__` 魔术方法，因此可以在
-    bot 对象上直接调用 CQHTTP API，例如：
+    由于基类 `api_impl.AsyncApi` 继承了 `api.Api` 的 `__getattr__`
+    魔术方法，因此可以在 bot 对象上直接调用 CQHTTP API，例如：
 
     ```py
     await bot.send_private_msg(user_id=10001000, message='你好')
@@ -157,13 +157,13 @@ class CQHttp(AsyncApi):
 
     @property
     def api(self) -> AsyncApi:
-        """`api.AsyncApi` 对象，用于异步地调用 CQHTTP API。"""
+        """`api_impl.AsyncApi` 对象，用于异步地调用 CQHTTP API。"""
         return self._api
 
     @property
     def sync(self) -> SyncApi:
         """
-        `api.SyncApi` 对象，用于同步地调用 CQHTTP API，例如：
+        `api_impl.SyncApi` 对象，用于同步地调用 CQHTTP API，例如：
 
         ```py
         @bot.on_message('group')
@@ -187,7 +187,7 @@ class CQHttp(AsyncApi):
 
     async def call_action(self, action: str, **params) -> Any:
         """
-        通过内部维护的 `api.AsyncApi` 具体实现类调用 CQHTTP API，``action``
+        通过内部维护的 `api_impl.AsyncApi` 具体实现类调用 CQHTTP API，``action``
         为要调用的 API 动作名，``**params`` 为 API 所需参数。
         """
         return await self._api.call_action(action=action, **params)

@@ -202,7 +202,8 @@ class SyncApi(Api):
 
     def __init__(self, async_api: AsyncApi, loop: asyncio.AbstractEventLoop):
         """
-        `async_api` 参数为 `Api` 对象，`loop` 参数为用来执行 API 调用的 event loop。
+        `async_api` 参数为 `AsyncApi` 对象，`loop` 参数为用来执行 API
+        调用的 event loop。
         """
         self._async_api = async_api
         self._loop = loop
@@ -217,7 +218,7 @@ class SyncApi(Api):
 
 class LazyApi(Api):
     """
-    延迟获取 `Api` 对象。
+    延迟获取 `aiocqhttp.api.Api` 对象。
     """
 
     def __init__(self, api_getter: Callable[[], Union[Api]]):

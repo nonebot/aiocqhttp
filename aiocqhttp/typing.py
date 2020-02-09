@@ -1,3 +1,7 @@
+"""
+此模块提供了用于类型提示的定义。
+"""
+
 from typing import Union, Dict, Any, List
 
 from .message import Message, MessageSegment
