@@ -3,14 +3,9 @@ from setuptools import setup, find_packages, findall
 with open('README.md', 'r', encoding='utf-8') as f:
     long_description = f.read()
 
-packages = find_packages(include=('aiocqhttp', 'aiocqhttp.*'))
-stub_files = list(filter(lambda x: x.endswith('.pyi'), findall('aiocqhttp')))
-
 setup(
     name='aiocqhttp',
-    version='1.0.1',
-    packages=packages,
-    data_files=stub_files,
+    version='1.1.0',
     url='https://github.com/cqmoe/python-aiocqhttp',
     license='MIT License',
     author='Richard Chien',
@@ -18,6 +13,10 @@ setup(
     description='A Python SDK with async I/O for CQHTTP.',
     long_description=long_description,
     long_description_content_type="text/markdown",
+    packages=find_packages(include=('aiocqhttp', 'aiocqhttp.*')),
+    package_data={
+        '': ['*.pyi'],
+    },
     install_requires=['Quart>=0.10,<1.0', 'aiohttp>=3.6'],
     extras_require={
         'all': ['ujson'],
