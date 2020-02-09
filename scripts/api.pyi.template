@@ -1,0 +1,13 @@
+from typing import Union, Awaitable, Any, Optional, Dict, List
+
+from aiocqhttp.typing import Message_T
+
+
+class Api:
+    def call_action(
+            self,
+            action: str,
+            **params
+    ) -> Union[Awaitable[Any], Any]: ...
+
+{api_methods}
