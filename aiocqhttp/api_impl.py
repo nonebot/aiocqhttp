@@ -14,7 +14,7 @@ try:
 except ImportError:
     import json
 
-import aiohttp
+import httpx
 from quart import websocket as event_ws
 from quart.wrappers.request import Websocket
 
@@ -73,15 +73,16 @@ class HttpApi(AsyncApi):
             headers['Authorization'] = 'Bearer ' + self._access_token
 
         try:
-            async with aiohttp.request('POST', self._api_root + '/' + action,
-                                       json=params, headers=headers) as resp:
-                if 200 <= resp.status < 300:
-                    return _handle_api_result(json.loads(await resp.text()))
-                raise HttpFailed(resp.status)
-        except aiohttp.InvalidURL:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(self._api_root + '/' + action,
+                                         json=params, headers=headers)
+            if 200 <= resp.status_code < 300:
+                return _handle_api_result(json.loads(resp.text))
+            raise HttpFailed(resp.status_code)
+        except httpx.InvalidURL:
             raise NetworkError('API root url invalid')
-        except aiohttp.ClientError:
-            raise NetworkError('HTTP request failed with client error')
+        except httpx.HTTPError:
+            raise NetworkError('HTTP request failed')
 
     def _is_available(self) -> bool:
         return bool(self._api_root)

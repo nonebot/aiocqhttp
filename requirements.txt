@@ -1,3 +1,3 @@
-Quart>=0.10
-aiohttp>=3.6
+Quart>=0.11,<0.12
+httpx>=0.11,<1.0
 git+https://github.com/richardchien/pdoc.git

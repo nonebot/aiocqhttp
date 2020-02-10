@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages, findall
+from setuptools import setup, find_packages
 
 with open('README.md', 'r', encoding='utf-8') as f:
     long_description = f.read()
@@ -17,7 +17,7 @@ setup(
     package_data={
         '': ['*.pyi'],
     },
-    install_requires=['Quart>=0.11,<0.12', 'aiohttp>=3.6'],
+    install_requires=['Quart>=0.11,<0.12', 'httpx>=0.11,<1.0'],
     extras_require={
         'all': ['ujson'],
     },
