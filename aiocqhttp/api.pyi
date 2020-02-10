@@ -15,7 +15,7 @@ class Api:
             user_id: int,
             message: Message_T,
             auto_escape: bool = False
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         发送私聊消息。
 
@@ -31,7 +31,7 @@ class Api:
             group_id: int,
             message: Message_T,
             auto_escape: bool = False
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         发送群消息。
 
@@ -47,7 +47,7 @@ class Api:
             discuss_id: int,
             message: Message_T,
             auto_escape: bool = False
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         发送讨论组消息。
 
@@ -66,7 +66,7 @@ class Api:
             discuss_id: Optional[int] = None,
             message: Message_T,
             auto_escape: bool = False
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         发送消息。
 
@@ -83,7 +83,7 @@ class Api:
     def delete_msg(
             self, *,
             message_id: int
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         撤回消息。
 
@@ -96,7 +96,7 @@ class Api:
             self, *,
             user_id: int,
             times: int = 1
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         发送好友赞。
 
@@ -111,7 +111,7 @@ class Api:
             group_id: int,
             user_id: int,
             reject_add_request: bool = False
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         群组踢人。
 
@@ -127,7 +127,7 @@ class Api:
             group_id: int,
             user_id: int,
             duration: int = 30 * 60
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         群组单人禁言。
 
@@ -144,7 +144,7 @@ class Api:
             anonymous: Optional[Dict[str, Any]] = None,
             anonymous_flag: Optional[str] = None,
             duration: int = 30 * 60
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         群组匿名用户禁言。
 
@@ -160,7 +160,7 @@ class Api:
             self, *,
             group_id: int,
             enable: bool = True
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         群组全员禁言。
 
@@ -175,7 +175,7 @@ class Api:
             group_id: int,
             user_id: int,
             enable: bool = True
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         群组设置管理员。
 
@@ -190,7 +190,7 @@ class Api:
             self, *,
             group_id: int,
             enable: bool = True
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         群组匿名。
 
@@ -205,7 +205,7 @@ class Api:
             group_id: int,
             user_id: int,
             card: str = ''
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         设置群名片（群备注）。
 
@@ -220,7 +220,7 @@ class Api:
             self, *,
             group_id: int,
             is_dismiss: bool = False
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         退出群组。
 
@@ -236,7 +236,7 @@ class Api:
             user_id: int,
             special_title: str = '',
             duration: int = -1
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         设置群组专属头衔。
 
@@ -251,7 +251,7 @@ class Api:
     def set_discuss_leave(
             self, *,
             discuss_id: int
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         退出讨论组。
 
@@ -265,7 +265,7 @@ class Api:
             flag: str,
             approve: bool = True,
             remark: str = ''
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         处理加好友请求。
 
@@ -282,7 +282,7 @@ class Api:
             sub_type: str,
             approve: bool = True,
             reason: str = ''
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         处理加群请求／邀请。
 
@@ -296,7 +296,7 @@ class Api:
 
     def get_login_info(
             self
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         获取登录号信息。
         """
@@ -306,7 +306,7 @@ class Api:
             self, *,
             user_id: int,
             no_cache: bool = False
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         获取陌生人信息。
 
@@ -318,7 +318,7 @@ class Api:
 
     def get_friend_list(
             self
-    ) -> List[Dict[str, Any]]:
+    ) -> Union[Awaitable[List[Dict[str, Any]]], List[Dict[str, Any]]]:
         """
         获取好友列表。
         """
@@ -326,7 +326,7 @@ class Api:
 
     def get_group_list(
             self
-    ) -> List[Dict[str, Any]]:
+    ) -> Union[Awaitable[List[Dict[str, Any]]], List[Dict[str, Any]]]:
         """
         获取群列表。
         """
@@ -336,7 +336,7 @@ class Api:
             self, *,
             group_id: int,
             no_cache: bool = False
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         获取群信息。
 
@@ -351,7 +351,7 @@ class Api:
             group_id: int,
             user_id: int,
             no_cache: bool = False
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         获取群成员信息。
 
@@ -365,7 +365,7 @@ class Api:
     def get_group_member_list(
             self, *,
             group_id: int
-    ) -> List[Dict[str, Any]]:
+    ) -> Union[Awaitable[List[Dict[str, Any]]], List[Dict[str, Any]]]:
         """
         获取群成员列表。
 
@@ -377,7 +377,7 @@ class Api:
     def get_cookies(
             self, *,
             domain: str = ''
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         获取 Cookies。
 
@@ -388,7 +388,7 @@ class Api:
 
     def get_csrf_token(
             self
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         获取 CSRF Token。
         """
@@ -397,7 +397,7 @@ class Api:
     def get_credentials(
             self, *,
             domain: str = ''
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         获取 QQ 相关接口凭证。
 
@@ -411,7 +411,7 @@ class Api:
             file: str,
             out_format: str,
             full_path: bool = False
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         获取语音。
 
@@ -425,7 +425,7 @@ class Api:
     def get_image(
             self, *,
             file: str
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         获取图片。
 
@@ -436,7 +436,7 @@ class Api:
 
     def can_send_image(
             self
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         检查是否可以发送图片。
         """
@@ -444,7 +444,7 @@ class Api:
 
     def can_send_record(
             self
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         检查是否可以发送语音。
         """
@@ -452,7 +452,7 @@ class Api:
 
     def get_status(
             self
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         获取插件运行状态。
         """
@@ -460,7 +460,7 @@ class Api:
 
     def get_version_info(
             self
-    ) -> Dict[str, Any]:
+    ) -> Union[Awaitable[Dict[str, Any]], Dict[str, Any]]:
         """
         获取 酷Q 及 HTTP API 插件的版本信息。
         """
@@ -469,7 +469,7 @@ class Api:
     def set_restart_plugin(
             self, *,
             delay: int = 0
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         重启 HTTP API 插件。
 
@@ -481,7 +481,7 @@ class Api:
     def clean_data_dir(
             self, *,
             data_dir: str
-    ) -> None:
+    ) -> Union[Awaitable[None], None]:
         """
         清理数据目录。
 

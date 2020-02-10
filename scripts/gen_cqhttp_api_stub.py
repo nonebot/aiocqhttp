@@ -26,7 +26,7 @@ res = re.findall(r'###\s*`/([_\w]+)`(.+?)\r?\n'
 API_METHOD_TEMPLATE = """\
     def {action}(
             self{params}
-    ) -> {ret}:
+    ) -> Union[Awaitable[{ret}], {ret}]:
         \"\"\"
         {description}{params_description}
         \"\"\"
