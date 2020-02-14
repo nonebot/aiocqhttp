@@ -218,11 +218,10 @@ class CQHttp(AsyncApi):
         """
         at_sender = kwargs.pop('at_sender', False) and 'user_id' in event
 
-        params = event.copy()
+        keys = {'message_type', 'user_id', 'group_id', 'discuss_id',
+                'auto_escape'}
+        params = {k: v for k, v in event.items() if k in keys}
         params['message'] = message
-        params.pop('raw_message', None)  # avoid wasting bandwidth
-        params.pop('comment', None)
-        params.pop('sender', None)
         params.update(kwargs)
 
         if 'message_type' not in params:
