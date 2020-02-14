@@ -64,12 +64,12 @@ class HttpApi(AsyncApi):
                  access_token: Optional[str],
                  timeout_sec: float):
         super().__init__()
-        self._api_root = api_root.rstrip('/') if api_root else None
+        self._api_root = api_root.rstrip('/') + '/' if api_root else None
         self._access_token = access_token
         self._timeout_sec = timeout_sec
 
     async def call_action(self, action: str, **params) -> Any:
-        if not self._is_available():
+        if not self._api_root:
             raise ApiNotAvailable
 
         headers = {}
@@ -78,7 +78,7 @@ class HttpApi(AsyncApi):
 
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.post(self._api_root + '/' + action,
+                resp = await client.post(self._api_root + action,
                                          json=params, headers=headers)
             if 200 <= resp.status_code < 300:
                 return _handle_api_result(json.loads(resp.text))
@@ -87,9 +87,6 @@ class HttpApi(AsyncApi):
             raise NetworkError('API root url invalid')
         except httpx.HTTPError:
             raise NetworkError('HTTP request failed')
-
-    def _is_available(self) -> bool:
-        return bool(self._api_root)
 
 
 class _SequenceGenerator:
@@ -145,11 +142,14 @@ class WebSocketReverseApi(AsyncApi):
     async def call_action(self, action: str, **params) -> Any:
         api_ws = None
         if params.get('self_id'):
+            # 明确指定
             api_ws = self._clients.get(str(params['self_id']))
-        elif self._is_available():
+        elif event_ws and event_ws.headers['X-Self-ID'] in self._clients:
+            # 没有指定，但在事件处理函数中
             api_ws = self._clients.get(event_ws.headers['X-Self-ID'])
         elif len(self._clients) == 1:
-            api_ws = list(self._clients.values())[0]
+            # 没有指定，不在事件处理函数中，但只有一个连接
+            api_ws = tuple(self._clients.values())[0]
 
         if not api_ws:
             raise ApiNotAvailable
@@ -160,10 +160,6 @@ class WebSocketReverseApi(AsyncApi):
         }))
         return _handle_api_result(
             await ResultStore.fetch(seq, self._timeout_sec))
-
-    def _is_available(self) -> bool:
-        # available only when current event ws has a corresponding api ws
-        return event_ws and event_ws.headers['X-Self-ID'] in self._clients
 
 
 class UnifiedApi(AsyncApi):
