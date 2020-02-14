@@ -1,5 +1,12 @@
 # 更新日志
 
+## v1.2.2
+
+- `CQHttp` 类新增 `api_timeout_sec` 参数，用于设置 CQHTTP API 请求的超时时间（单位秒）
+- 默认关闭 Quart 的 reloader（监测文件变更，自动重启）
+- 修复 `api` 模块 stub 文件缺少 `self_id` 参数问题
+- 修复多个 CQHTTP 连接同一后端时，通过 `self_id` 指定机器人无效的问题
+
 ## v1.2.1
 
 - 修复 `api` 模块 stub 文件返回类型问题
