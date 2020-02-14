@@ -59,10 +59,14 @@ class HttpApi(AsyncApi):
     实现通过 HTTP 调用 CQHTTP API。
     """
 
-    def __init__(self, api_root: Optional[str], access_token: Optional[str]):
+    def __init__(self,
+                 api_root: Optional[str],
+                 access_token: Optional[str],
+                 timeout_sec: float):
         super().__init__()
         self._api_root = api_root.rstrip('/') if api_root else None
         self._access_token = access_token
+        self._timeout_sec = timeout_sec
 
     async def call_action(self, action: str, **params) -> Any:
         if not self._is_available():
@@ -110,11 +114,11 @@ class ResultStore:
                 future.set_result(result)
 
     @classmethod
-    async def fetch(cls, seq: int) -> Dict[str, Any]:
+    async def fetch(cls, seq: int, timeout_sec: float) -> Dict[str, Any]:
         future = asyncio.get_event_loop().create_future()
         cls._futures[seq] = future
         try:
-            return await asyncio.wait_for(future, 60)  # wait for only 60 secs
+            return await asyncio.wait_for(future, timeout_sec)
         except asyncio.TimeoutError:
             # haven't received any result until timeout,
             # we consider this API call failed with a network error.
@@ -131,9 +135,12 @@ class WebSocketReverseApi(AsyncApi):
     实现通过反向 WebSocket 调用 CQHTTP API。
     """
 
-    def __init__(self, connected_clients: Dict[str, Websocket]):
+    def __init__(self,
+                 connected_clients: Dict[str, Websocket],
+                 timeout_sec: float):
         super().__init__()
         self._clients = connected_clients
+        self._timeout_sec = timeout_sec
 
     async def call_action(self, action: str, **params) -> Any:
         api_ws = None
@@ -151,7 +158,8 @@ class WebSocketReverseApi(AsyncApi):
         await api_ws.send(json.dumps({
             'action': action, 'params': params, 'echo': {'seq': seq}
         }))
-        return _handle_api_result(await ResultStore.fetch(seq))
+        return _handle_api_result(
+            await ResultStore.fetch(seq, self._timeout_sec))
 
     def _is_available(self) -> bool:
         # available only when current event ws has a corresponding api ws

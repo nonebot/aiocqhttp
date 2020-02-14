@@ -86,6 +86,7 @@ class CQHttp(AsyncApi):
                  access_token: Optional[str] = None,
                  secret: Optional[AnyStr] = None,
                  message_class: Optional[type] = None,
+                 api_timeout_sec: Optional[float] = None,
                  **kwargs):
         """
         ``api_root`` 参数为 CQHTTP API 的 URL，``access_token`` 和
@@ -104,6 +105,8 @@ class CQHttp(AsyncApi):
             # 这里 event.message 已经被转换为 Message 对象
             assert isinstance(event.message, Message)
         ```
+
+        ``api_timeout_sec`` 参数用于设置 CQHTTP API 请求的超时时间，单位是秒。
         """
         self._api = UnifiedApi()
         self._sync_api = None
@@ -118,19 +121,28 @@ class CQHttp(AsyncApi):
             self._server_app.add_websocket(p, strict_slashes=False,
                                            view_func=self._handle_wsr)
 
-        self._configure(api_root, access_token, secret, message_class)
+        self._configure(
+            api_root,
+            access_token,
+            secret,
+            message_class,
+            api_timeout_sec
+        )
 
     def _configure(self,
                    api_root: Optional[str] = None,
                    access_token: Optional[str] = None,
                    secret: Optional[AnyStr] = None,
-                   message_class: Optional[type] = None):
+                   message_class: Optional[type] = None,
+                   api_timeout_sec: Optional[float] = None):
         self._message_class = message_class
+        api_timeout_sec = api_timeout_sec or 60  # wait for 60 secs by default
         self._access_token = access_token
         self._secret = secret
-        self._api._http_api = HttpApi(api_root, access_token)
+        self._api._http_api = HttpApi(api_root, access_token, api_timeout_sec)
         self._wsr_api_clients = {}  # connected wsr api clients
-        self._api._wsr_api = WebSocketReverseApi(self._wsr_api_clients)
+        self._api._wsr_api = WebSocketReverseApi(
+            self._wsr_api_clients, api_timeout_sec)
 
     async def _before_serving(self):
         self._loop = asyncio.get_running_loop()
