@@ -183,6 +183,8 @@ class CQHttp(AsyncApi):
 
     def run(self, host: str = None, port: int = None, *args, **kwargs) -> None:
         """运行 bot 对象，实际就是运行 Quart app，参数与 `Quart.run` 一致。"""
+        if 'use_reloader' not in kwargs:
+            kwargs['use_reloader'] = False
         self._server_app.run(host=host, port=port, *args, **kwargs)
 
     async def call_action(self, action: str, **params) -> Any:
