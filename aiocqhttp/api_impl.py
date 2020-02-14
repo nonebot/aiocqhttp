@@ -144,10 +144,10 @@ class WebSocketReverseApi(AsyncApi):
 
     async def call_action(self, action: str, **params) -> Any:
         api_ws = None
-        if self._is_available():
-            api_ws = self._clients.get(event_ws.headers['X-Self-ID'])
-        elif params.get('self_id'):
+        if params.get('self_id'):
             api_ws = self._clients.get(str(params['self_id']))
+        elif self._is_available():
+            api_ws = self._clients.get(event_ws.headers['X-Self-ID'])
         elif len(self._clients) == 1:
             api_ws = list(self._clients.values())[0]
 
