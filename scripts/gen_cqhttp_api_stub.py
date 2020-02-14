@@ -114,6 +114,8 @@ for api in api_list:
             .replace('true', 'True') \
             .replace('false', 'False')
     api.params = params
+    api.params.append(
+        ApiParam('self_id', 'Optional[int]', 'None', '机器人 QQ 号'))
     if api.ret.startswith('|'):
         api.ret = 'Dict[str, Any]'
     elif '数组' in api.ret:
