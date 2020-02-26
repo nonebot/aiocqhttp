@@ -30,7 +30,7 @@ bot = CQHttp(message_class=Message)
 
 当然，如果内置的 `Message` 类不符合你的需求，你也可以自己编写消息类，同样可以传入 `message_class`。
 
-## 默认 bot
+## 默认 bot 对象
 
 如果你只是开发一些简单的功能，或临时做测试等，可以不用自己创建 bot 对象，而直接使用 SDK 内置的默认 bot 对象，例如：
 
@@ -114,4 +114,16 @@ SDK 注册了 `/`、`/ws`、`/ws/api`、`/ws/event` 这几个路由，以便向 
 @bot.server_app.route('/webhook')
 async def webhook():
     pass
+```
+
+## 在已有事件循环中运行
+
+通过 `CQHttp.run_task` 方法可以将 bot 运行在已有的事件循环中，参数同 `CQHttp.run`，例如：
+
+```python
+bot = CQHttp()
+
+loop = asyncio.new_event_loop()
+loop.create_task(bot.run_task(host='127.0.0.1', port=8080))
+loop.run_forever()
 ```

@@ -1,5 +1,9 @@
 # 更新日志
 
+## v1.2.3
+
+- 新增 `CQHttp.run_task` 方法，运行产生 coroutine 而不是直接启动事件循环
+
 ## v1.2.2
 
 - `CQHttp` 类新增 `api_timeout_sec` 参数，用于设置 CQHTTP API 请求的超时时间（单位秒）
