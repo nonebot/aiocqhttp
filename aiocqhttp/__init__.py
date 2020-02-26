@@ -9,7 +9,7 @@ import hmac
 import logging
 import re
 from typing import (Dict, Any, Optional, AnyStr, Callable, Union, List,
-                    Awaitable)
+                    Awaitable, Coroutine)
 
 try:
     import ujson as json
@@ -198,6 +198,12 @@ class CQHttp(AsyncApi):
         if 'use_reloader' not in kwargs:
             kwargs['use_reloader'] = False
         self._server_app.run(host=host, port=port, *args, **kwargs)
+
+    def run_task(self, host: str = None, port: int = None,
+                 *args, **kwargs) -> Coroutine[None, None, None]:
+        if 'use_reloader' not in kwargs:
+            kwargs['use_reloader'] = False
+        return self._server_app.run_task(host=host, port=port, *args, **kwargs)
 
     async def call_action(self, action: str, **params) -> Any:
         """
