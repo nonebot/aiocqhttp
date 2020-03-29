@@ -5,7 +5,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 
 setup(
     name='aiocqhttp',
-    version='1.2.3',
+    version='1.2.4',
     url='https://github.com/cqmoe/python-aiocqhttp',
     license='MIT License',
     author='Richard Chien',
