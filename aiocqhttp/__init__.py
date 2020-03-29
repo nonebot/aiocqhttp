@@ -87,6 +87,7 @@ class CQHttp(AsyncApi):
                  secret: Optional[AnyStr] = None,
                  message_class: Optional[type] = None,
                  api_timeout_sec: Optional[float] = None,
+                 server_app_kwargs: Optional[dict] = None,
                  **kwargs):
         """
         ``import_name`` 参数为当前模块（使用 `CQHttp` 的模块）的导入名，通常传入
@@ -111,14 +112,14 @@ class CQHttp(AsyncApi):
 
         ``api_timeout_sec`` 参数用于设置 CQHTTP API 请求的超时时间，单位是秒。
 
-        其余的命名参数 ``**kwargs`` 将原样传给 `Quart` 的初始化函数。
+        ``server_app_kwargs`` 参数用于配置 `Quart` 对象，将以命名参数形式传给入其初始化函数。
         """
         self._api = UnifiedApi()
         self._sync_api = None
         self._bus = EventBus()
         self._loop = None
 
-        self._server_app = Quart(import_name, **kwargs)
+        self._server_app = Quart(import_name, **(server_app_kwargs or {}))
         self._server_app.before_serving(self._before_serving)
         self._server_app.add_url_rule('/', methods=['POST'],
                                       view_func=self._handle_http_event)
