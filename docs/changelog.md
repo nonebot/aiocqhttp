@@ -1,5 +1,11 @@
 # 更新日志
 
+## v1.2.5
+
+- 修复使用 Quart app 时，无法找到模板文件夹等问题
+- `CQHttp` 类新增位置参数 `import_name`，通常应不传入或传入 `__name__`
+- `CQHttp` 类新增 ``
+
 ## v1.2.3
 
 - 新增 `CQHttp.run_task` 方法，运行产生 coroutine 而不是直接启动事件循环
