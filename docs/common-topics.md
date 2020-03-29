@@ -116,6 +116,16 @@ async def webhook():
     pass
 ```
 
+使用 Quart 时，有时需要用到当前模块的相对路径，例如加载当前模块下的 `templates` 中的模板文件等，如果使用这些功能时遇到问题，可以尝试给 `CQHttp` 类传入 `import_name` 参数，例如：
+
+```python
+bot = CQHttp(__name__)
+
+@bot.server_app.route('/admin')
+async def admin():
+    return await render_template('admin.html')
+```
+
 ## 在已有事件循环中运行
 
 通过 `CQHttp.run_task` 方法可以将 bot 运行在已有的事件循环中，参数同 `CQHttp.run`，例如：
