@@ -3,8 +3,8 @@
 ## v1.2.5
 
 - 修复使用 Quart app 时，无法找到模板文件夹等问题
-- `CQHttp` 类新增位置参数 `import_name`，通常应不传入或传入 `__name__`
-- `CQHttp` 类新增 ``
+- `CQHttp` 类新增位置参数 `import_name`，通常应不传入（保持默认）或传入 `__name__`
+- `CQHttp` 类新增 `server_app_kwargs` 参数，用于配置 Quart 对象，将以命名参数的形式传入其初始化函数
 
 ## v1.2.3
 
