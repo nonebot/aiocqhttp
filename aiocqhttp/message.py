@@ -122,6 +122,9 @@ class MessageSegment(dict):
     def __add__(self, other: Any):
         return Message(self).__add__(other)
 
+    def __radd__(self, other: Any):
+        return Message(self).__radd__(other)
+
     @staticmethod
     def text(text: str) -> 'MessageSegment':
         """纯文本。"""
@@ -306,6 +309,13 @@ class Message(list):
             return result
         except ValueError:
             raise ValueError('the addend is not a valid message')
+
+    def __radd__(self, other: Any):
+        try:
+            result = Message(other)
+            return result.__add__(self)
+        except ValueError:
+            raise ValueError('the left addend is not a valid message')
 
     def append(self, obj: Any) -> Any:
         """在消息末尾追加消息段。"""
