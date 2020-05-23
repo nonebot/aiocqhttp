@@ -8,8 +8,8 @@ import asyncio
 import hmac
 import logging
 import re
-from typing import (Dict, Any, Optional, AnyStr, Callable, Union, List,
-                    Awaitable, Coroutine)
+from typing import (Dict, Any, Optional, AnyStr, Callable, Union, Awaitable,
+                    Coroutine)
 
 try:
     import ujson as json
@@ -24,7 +24,8 @@ from .bus import EventBus
 from .exceptions import Error, TimingError
 from .event import Event
 from .message import Message, MessageSegment
-from .utils import ensure_async
+from .utils import ensure_async, run_async_funcs
+from .typing import Message_T
 
 from . import exceptions
 from .exceptions import *  # noqa: F401, F403
@@ -119,6 +120,7 @@ class CQHttp(AsyncApi):
         self._api = UnifiedApi()
         self._sync_api = None
         self._bus = EventBus()
+        self._before_sending_funcs = set()
         self._loop = None
 
         self._server_app = Quart(import_name, **(server_app_kwargs or {}))
@@ -220,8 +222,7 @@ class CQHttp(AsyncApi):
         """
         return await self._api.call_action(action=action, **params)
 
-    async def send(self, event: Event,
-                   message: Union[str, Dict[str, Any], List[Dict[str, Any]]],
+    async def send(self, event: Event, message: Message_T,
                    **kwargs) -> Optional[Dict[str, Any]]:
         """
         向触发事件的主体发送消息。
@@ -230,12 +231,14 @@ class CQHttp(AsyncApi):
         命名参数用于控制是否 at 事件的触发者，默认为 `False`。其它命名参数作为
         CQHTTP API ``send_msg`` 的参数直接传递。
         """
-        at_sender = kwargs.pop('at_sender', False) and 'user_id' in event
+        msg = message if isinstance(message, Message) else Message(message)
+        await run_async_funcs(self._before_sending_funcs, event, msg, kwargs)
 
-        keys = {'message_type', 'user_id', 'group_id', 'discuss_id',
-                'auto_escape'}
+        at_sender = kwargs.pop('at_sender', False) and ('user_id' in event)
+
+        keys = {'message_type', 'user_id', 'group_id', 'discuss_id'}
         params = {k: v for k, v in event.items() if k in keys}
-        params['message'] = message
+        params['message'] = msg
         params.update(kwargs)
 
         if 'message_type' not in params:
@@ -251,6 +254,23 @@ class CQHttp(AsyncApi):
                                 MessageSegment.text(' ') + params['message']
 
         return await self.send_msg(**params)
+
+    def before_sending(self, func: Callable) -> Callable:
+        """
+        注册发送消息前的钩子函数，用作装饰器，例如：
+
+        ```py
+        @bot.before_sending
+        async def hook(event: Event, message: Message, kwargs: Dict[str, Any]):
+            message.clear()
+            message.append(MessageSegment.text('hooked!'))
+        ```
+
+        该钩子函数在刚进入 `CQHttp.send` 函数时运行，用户可在钩子函数中修改要发送的
+        ``message`` 和发送参数 ``kwargs``。
+        """
+        self._before_sending_funcs.add(ensure_async(func))
+        return func
 
     def subscribe(self, event_name: str, func: Callable) -> None:
         """注册事件处理函数。"""
