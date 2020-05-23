@@ -325,7 +325,7 @@ class CQHttp(AsyncApi):
     __pdoc__['CQHttp.on_message'] = """
     注册消息事件处理函数，用作装饰器，例如：
 
-    ```
+    ```py
     @bot.on_message('private')
     async def handler(event):
         pass
@@ -333,7 +333,7 @@ class CQHttp(AsyncApi):
 
     这等价于：
 
-    ```
+    ```py
     @bot.on('message.private')
     async def handler(event):
         pass
@@ -341,7 +341,7 @@ class CQHttp(AsyncApi):
 
     也可以不加参数，表示注册为所有消息事件的处理函数，例如：
 
-    ```
+    ```py
     @bot.on_message
     async def handler(event):
         pass
@@ -393,7 +393,7 @@ class CQHttp(AsyncApi):
     __pdoc__['CQHttp.before_message'] = """
     注册消息事件处理前的钩子函数，用作装饰器，例如：
 
-    ```
+    ```py
     @bot.before_message('private')
     async def hook(event):
         pass
@@ -401,7 +401,7 @@ class CQHttp(AsyncApi):
 
     这等价于：
 
-    ```
+    ```py
     @bot.before('message.private')
     async def hook(event):
         pass
@@ -409,7 +409,7 @@ class CQHttp(AsyncApi):
 
     也可以不加参数，表示注册为所有消息事件处理前的钩子函数，例如：
 
-    ```
+    ```py
     @bot.before_message
     async def hook(event):
         pass
@@ -429,7 +429,7 @@ class CQHttp(AsyncApi):
         """
         注册 bot 启动时钩子函数，用作装饰器，例如：
 
-        ```
+        ```py
         @bot.on_startup
         async def startup():
             await db.init()
@@ -441,7 +441,7 @@ class CQHttp(AsyncApi):
         """
         注册 WebSocket 连接元事件处理函数，等价于 ``on_meta_event('lifecycle.connect')``，例如：
 
-        ```
+        ```py
         @bot.on_websocket_connection
         async def handler(event):
             global groups
