@@ -335,6 +335,31 @@ class CQHttp(AsyncApi):
     on_meta_event = _deco_maker('meta_event')
     __pdoc__['CQHttp.on_meta_event'] = "注册元事件处理函数，用作装饰器，用法同上。"
 
+    def on_startup(self, func: Callable) -> Callable:
+        """
+        注册 bot 启动时钩子函数，用作装饰器，例如：
+
+        ```
+        @bot.on_startup
+        async def startup():
+            await db.init()
+        ```
+        """
+        return self.server_app.before_serving(func)
+
+    def on_websocket_connection(self, func: Callable) -> Callable:
+        """
+        注册 WebSocket 连接元事件处理函数，等价于 ``on_meta_event('lifecycle.connect')``，例如：
+
+        ```
+        @bot.on_websocket_connection
+        async def handler(event):
+            global groups
+            groups = await bot.get_group_list(self_id=event.self_id)
+        ```
+        """
+        return self.on_meta_event('lifecycle.connect')(func)
+
     async def _handle_http_event(self) -> Response:
         if self._secret:
             if 'X-Signature' not in request.headers:
