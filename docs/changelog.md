@@ -1,5 +1,10 @@
 # 更新日志
 
+## master
+
+- `CQHttp` 类新增装饰器 `on_startup` 和 `on_websocket_connection`，分别用于注册 bot 对象启动时钩子函数和 WebSocket 连接事件处理函数
+- 修复 `Message` 类对象拼接运算的 bug
+
 ## v1.2.5
 
 - 修复使用 Quart app 时，无法找到模板文件夹等问题
