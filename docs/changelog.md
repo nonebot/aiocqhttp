@@ -2,8 +2,11 @@
 
 ## master
 
-- `CQHttp` 类新增装饰器 `on_startup` 和 `on_websocket_connection`，分别用于注册 bot 对象启动时钩子函数和 WebSocket 连接事件处理函数
-- 修复 `Message` 类对象拼接运算的 bug
+- `CQHttp` 类新增 `on_startup` 装饰器，用于注册 bot 对象启动时钩子函数
+- `CQHttp` 类新增 `on_websocket_connection` 装饰器，用于注册 WebSocket 连接事件处理函数
+- `CQHttp` 类新增 `before_*` 装饰器（`before`、`before_message` 等），用于注册事件处理前的钩子函数，使用方式同 `on_*` 装饰器
+- `CQHttp` 类新增 `before_sending` 装饰器，用于注册发送消息前的钩子函数
+- 修复 `Message` 对象拼接运算的 bug
 
 ## v1.2.5
 
