@@ -59,70 +59,25 @@ class Event(dict):
             n += '.' + self.sub_type
         return n
 
-    @property
-    def self_id(self) -> int:
-        """机器人自身 ID。"""
-        return self['self_id']
+    self_id: int  # 机器人自身 ID
+    user_id: Optional[int]  # 用户 ID
+    operator_id: Optional[int]  # 操作者 ID
+    group_id: Optional[int]  # 群 ID
+    discuss_id: Optional[int]  # 讨论组 ID
+    message_id: Optional[int]  # 消息 ID
+    message: Optional[Any]  # 消息
+    raw_message: Optional[str]  # 未经 CQHTTP 处理的原始消息
+    sender: Optional[Dict[str, Any]]  # 消息发送者信息
+    anonymous: Optional[Dict[str, Any]]  # 匿名信息
+    file: Optional[Dict[str, Any]]  # 文件信息
+    comment: Optional[str]  # 请求验证消息
+    flag: Optional[str]  # 请求标识
 
-    @property
-    def user_id(self) -> Optional[int]:
-        """用户 ID。"""
-        return self.get('user_id')
+    def __getattr__(self, key) -> Optional[Any]:
+        return self.get(key)
 
-    @property
-    def operator_id(self) -> Optional[int]:
-        """操作者 ID。"""
-        return self.get('operator_id')
-
-    @property
-    def group_id(self) -> Optional[int]:
-        """群 ID。"""
-        return self.get('group_id')
-
-    @property
-    def discuss_id(self) -> Optional[int]:
-        """讨论组 ID。"""
-        return self.get('discuss_id')
-
-    @property
-    def message_id(self) -> Optional[int]:
-        """消息 ID。"""
-        return self.get('message_id')
-
-    @property
-    def message(self) -> Optional[Any]:
-        """消息。"""
-        return self.get('message')
-
-    @property
-    def raw_message(self) -> Optional[str]:
-        """未经 CQHTTP 处理的原始消息。"""
-        return self.get('raw_message')
-
-    @property
-    def sender(self) -> Optional[Dict[str, Any]]:
-        """消息发送者信息。"""
-        return self.get('sender')
-
-    @property
-    def anonymous(self) -> Optional[Dict[str, Any]]:
-        """匿名信息。"""
-        return self.get('anonymous')
-
-    @property
-    def file(self) -> Optional[Dict[str, Any]]:
-        """文件信息。"""
-        return self.get('file')
-
-    @property
-    def comment(self) -> Optional[str]:
-        """请求验证消息。"""
-        return self.get('comment')
-
-    @property
-    def flag(self) -> Optional[str]:
-        """请求标识。"""
-        return self.get('flag')
+    def __setattr__(self, key, value) -> None:
+        self[key] = value
 
     def __repr__(self) -> str:
         return f'<Event, {super().__repr__()}>'
