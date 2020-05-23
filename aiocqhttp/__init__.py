@@ -37,15 +37,17 @@ __all__ += exceptions.__all__
 __pdoc__ = {}
 
 
-def _deco_maker(type_: str) -> Callable:
+def _deco_maker(deco_method: Callable, type_: str) -> Callable:
     def deco_deco(self, arg: Optional[Union[str, Callable]] = None,
                   *sub_event_names: str) -> Callable:
         def deco(func: Callable) -> Callable:
             if isinstance(arg, str):
                 e = [type_ + '.' + e for e in [arg] + list(sub_event_names)]
-                self.on(*e)(func)
+                # self.on(*e)(func)
+                deco_method(self, *e)(func)
             else:
-                self.on(type_)(func)
+                # self.on(type_)(func)
+                deco_method(self, type_)(func)
             return func
 
         if isinstance(arg, Callable):
@@ -299,7 +301,7 @@ class CQHttp(AsyncApi):
 
         return deco
 
-    on_message = _deco_maker('message')
+    on_message = _deco_maker(on, 'message')
     __pdoc__['CQHttp.on_message'] = """
     注册消息事件处理函数，用作装饰器，例如：
 
@@ -326,22 +328,90 @@ class CQHttp(AsyncApi):
     ```
     """
 
-    on_notice = _deco_maker('notice')
+    on_notice = _deco_maker(on, 'notice')
     __pdoc__['CQHttp.on_notice'] = "注册通知事件处理函数，用作装饰器，用法同上。"
 
-    on_request = _deco_maker('request')
+    on_request = _deco_maker(on, 'request')
     __pdoc__['CQHttp.on_request'] = "注册请求事件处理函数，用作装饰器，用法同上。"
 
-    on_meta_event = _deco_maker('meta_event')
+    on_meta_event = _deco_maker(on, 'meta_event')
     __pdoc__['CQHttp.on_meta_event'] = "注册元事件处理函数，用作装饰器，用法同上。"
 
-    def before_serving(self, func: Callable) -> Callable:
+    def hook_before(self, event_name: str, func: Callable) -> None:
+        """注册事件处理前的钩子函数。"""
+        self._bus.hook_before(event_name, ensure_async(func))
+
+    def unhook_before(self, event_name: str, func: Callable) -> None:
+        """取消注册事件处理前的钩子函数。"""
+        self._bus.unhook_before(event_name, func)
+
+    def before(self, *event_names: str) -> Callable:
         """
-        注册 bot 启动前钩子函数，用作装饰器，例如：
+        注册事件处理前的钩子函数，用作装饰器，例如：
+
+        ```py
+        @bot.before('notice.group_decrease', 'notice.group_increase')
+        async def hook(event):
+            pass
+        ```
+
+        参数为要注册的事件名，格式是点号分割的各级事件类型，见 `Event.name`。
+
+        钩子函数的注册方法和事件处理函数几乎完全一致，只需将 ``on`` 改为 ``before``。
+
+        各级 before 钩子函数全部运行完成后，才会运行事件处理函数。
+        """
+
+        def deco(func: Callable) -> Callable:
+            for name in event_names:
+                self.hook_before(name, func)
+            return func
+
+        return deco
+
+    before_message = _deco_maker(before, 'message')
+    __pdoc__['CQHttp.before_message'] = """
+    注册消息事件处理前的钩子函数，用作装饰器，例如：
+
+    ```
+    @bot.before_message('private')
+    async def hook(event):
+        pass
+    ```
+
+    这等价于：
+
+    ```
+    @bot.before('message.private')
+    async def hook(event):
+        pass
+    ```
+
+    也可以不加参数，表示注册为所有消息事件处理前的钩子函数，例如：
+
+    ```
+    @bot.before_message
+    async def hook(event):
+        pass
+    ```
+    """
+
+    before_notice = _deco_maker(before, 'notice')
+    __pdoc__['CQHttp.before_notice'] = "注册通知事件处理前的钩子函数，用作装饰器，用法同上。"
+
+    before_request = _deco_maker(before, 'request')
+    __pdoc__['CQHttp.before_request'] = "注册请求事件处理前的钩子函数，用作装饰器，用法同上。"
+
+    before_meta_event = _deco_maker(before, 'meta_event')
+    __pdoc__['CQHttp.before_meta_event'] = "注册元事件处理前的钩子函数，用作装饰器，用法同上。"
+
+    def on_startup(self, func: Callable) -> Callable:
+        """
+        注册 bot 启动时钩子函数，用作装饰器，例如：
 
         ```
-        @bot.before_serving
-        async def init_database():
+        @bot.on_startup
+        async def startup():
             await db.init()
         ```
         """
