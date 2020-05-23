@@ -335,13 +335,13 @@ class CQHttp(AsyncApi):
     on_meta_event = _deco_maker('meta_event')
     __pdoc__['CQHttp.on_meta_event'] = "注册元事件处理函数，用作装饰器，用法同上。"
 
-    def on_startup(self, func: Callable) -> Callable:
+    def before_serving(self, func: Callable) -> Callable:
         """
-        注册 bot 启动时钩子函数，用作装饰器，例如：
+        注册 bot 启动前钩子函数，用作装饰器，例如：
 
         ```
-        @bot.on_startup
-        async def startup():
+        @bot.before_serving
+        async def init_database():
             await db.init()
         ```
         """
@@ -357,6 +357,8 @@ class CQHttp(AsyncApi):
             global groups
             groups = await bot.get_group_list(self_id=event.self_id)
         ```
+
+        注：仅支持 CQHTTP v4.14+。
         """
         return self.on_meta_event('lifecycle.connect')(func)
 
