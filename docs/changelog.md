@@ -1,6 +1,6 @@
 # 更新日志
 
-## master
+## v1.3.0
 
 - `CQHttp` 类新增 `on_startup` 装饰器，用于注册 bot 对象启动时钩子函数
 - `CQHttp` 类新增 `on_websocket_connection` 装饰器，用于注册 WebSocket 连接事件处理函数
