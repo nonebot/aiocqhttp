@@ -8,13 +8,18 @@ import asyncio
 import hmac
 import logging
 import re
-from typing import (Dict, Any, Optional, AnyStr, Callable, Union, Awaitable,
-                    Coroutine)
+from typing import (Any, AnyStr, Awaitable, Callable, Coroutine, Dict, List,
+                    Optional, Union)
 
 try:
     import ujson as json
 except ImportError:
     import json
+
+try:
+    import IPy
+except ImportError:
+    IPy = None
 
 from quart import Quart, request, abort, jsonify, websocket, Response
 
@@ -88,6 +93,8 @@ class CQHttp(AsyncApi):
                  api_root: Optional[str] = None,
                  access_token: Optional[str] = None,
                  secret: Optional[AnyStr] = None,
+                 enable_http_post: bool = True,
+                 trusted_ip: Optional[Union[str,List[str]]] = None,
                  message_class: Optional[type] = None,
                  api_timeout_sec: Optional[float] = None,
                  server_app_kwargs: Optional[dict] = None,
@@ -98,6 +105,11 @@ class CQHttp(AsyncApi):
 
         ``api_root`` 参数为 CQHTTP API 的 URL，``access_token`` 和
         ``secret`` 参数为 CQHTTP 配置中填写的对应项。
+
+        ``enable_http_post`` 是否启用 CQHTTP 中的 http 模式。
+
+        ``trusted_ip`` 参数为 CQHTTP 客户端的 IP 地址或网段，字符串或字符串数组，
+        例如：``"127.0.0.1"``、``["127.0.0.0/8", "172.16.0.0/12"]``。
 
         ``message_class`` 参数为要用来对 `Event.message` 进行转换的消息类，可使用
         `Message`，例如：
@@ -125,8 +137,10 @@ class CQHttp(AsyncApi):
 
         self._server_app = Quart(import_name, **(server_app_kwargs or {}))
         self._server_app.before_serving(self._before_serving)
-        self._server_app.add_url_rule('/', methods=['POST'],
-                                      view_func=self._handle_http_event)
+        if enable_http_post:
+            # 将 enable_http_post 设为 False 可以跳过注册 '/' 路由
+            self._server_app.add_url_rule('/', methods=['POST'],
+                                          view_func=self._handle_http_event)
         for p in ('/ws', '/ws/event', '/ws/api'):
             self._server_app.add_websocket(p, strict_slashes=False,
                                            view_func=self._handle_wsr)
@@ -135,6 +149,7 @@ class CQHttp(AsyncApi):
             api_root,
             access_token,
             secret,
+            trusted_ip,
             message_class,
             api_timeout_sec
         )
@@ -143,12 +158,23 @@ class CQHttp(AsyncApi):
                    api_root: Optional[str] = None,
                    access_token: Optional[str] = None,
                    secret: Optional[AnyStr] = None,
+                   trusted_ip: Optional[Union[str,List[str]]] = None,
                    message_class: Optional[type] = None,
                    api_timeout_sec: Optional[float] = None):
         self._message_class = message_class
         api_timeout_sec = api_timeout_sec or 60  # wait for 60 secs by default
         self._access_token = access_token
         self._secret = secret
+        if trusted_ip:
+            if IPy is None:
+                raise RuntimeError("'trusted_ip' require module 'IPy', which is not installed")
+            elif isinstance(trusted_ip, str):
+                trusted_ip = IPy.IPSet([IPy.IP(trusted_ip)])
+            elif isinstance(trusted_ip, list):
+                trusted_ip = IPy.IPSet(
+                    [IPy.IP(ipaddr) for ipaddr in trusted_ip]
+                )
+        self._trusted_ip = trusted_ip
         self._api._http_api = HttpApi(api_root, access_token, api_timeout_sec)
         self._wsr_api_clients = {}  # connected wsr api clients
         self._api._wsr_api = WebSocketReverseApi(
@@ -465,6 +491,12 @@ class CQHttp(AsyncApi):
                 self.logger.warning('signature header is invalid')
                 abort(403)
 
+        if self._trusted_ip:
+            remote_ip = IPy.IP(request.remote_addr)
+            if remote_ip not in self._trusted_ip:
+                self.logger.warning('attempting connector is untrusted')
+                abort(403)
+
         payload = await request.json
         if not isinstance(payload, dict):
             abort(400)
@@ -490,6 +522,12 @@ class CQHttp(AsyncApi):
             token_given = m.group('token').strip()
             if token_given != self._access_token:
                 self.logger.warning('authorization header is invalid')
+                abort(403)
+
+        if self._trusted_ip:
+            remote_ip = IPy.IP(websocket.remote_addr)
+            if remote_ip not in self._trusted_ip:
+                self.logger.warning('attempting connector is untrusted')
                 abort(403)
 
         role = websocket.headers['X-Client-Role'].lower()

@@ -19,7 +19,7 @@ setup(
     },
     install_requires=['Quart>=0.11,<0.12', 'httpx>=0.11,<1.0'],
     extras_require={
-        'all': ['ujson'],
+        'all': ['ujson', 'IPy'],
     },
     python_requires='>=3.7',
     platforms='any',
