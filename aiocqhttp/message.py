@@ -141,8 +141,13 @@ class MessageSegment(dict):
         return MessageSegment(type_='face', data={'id': str(id_)})
 
     @staticmethod
-    def image(file: str) -> 'MessageSegment':
+    def image(file: str, destruct: bool = False) -> 'MessageSegment':
         """图片。"""
+        if destruct:
+            return MessageSegment(type_='image', data={
+                'file': file,
+                'destruct': '1'
+            })
         return MessageSegment(type_='image', data={'file': file})
 
     @staticmethod
