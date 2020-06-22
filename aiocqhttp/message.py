@@ -143,10 +143,12 @@ class MessageSegment(dict):
     @staticmethod
     def image(file: str, destruct: bool = False) -> 'MessageSegment':
         """图片。"""
-        return MessageSegment(type_='image', data={
-            'file': file,
-            'destruct': 0 if not destruct else 1
-        })
+        if destruct:
+            return MessageSegment(type_='image', data={
+                'file': file,
+                'destruct': '1'
+            })
+        return MessageSegment(type_='image', data={'file': file})
 
     @staticmethod
     def record(file: str, magic: bool = False) -> 'MessageSegment':
