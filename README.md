@@ -15,8 +15,8 @@
 
 ## 文档
 
-使用方法见 [文档](https://python-aiocqhttp.cqp.moe/)。
+使用方法见 [文档](https://aiocqhttp.cqp.moe/)。
 
 ## 遇到问题
 
-如果在使用本 SDK 时遇到任何问题，请 [提交 issue](https://github.com/cqmoe/python-aiocqhttp/issues/new)，也欢迎参与项目开发，具体流程请参考 [贡献指南](CONTRIBUTING.md)。
+如果在使用本 SDK 时遇到任何问题，请 [提交 issue](https://github.com/nonebot/aiocqhttp/issues/new)，也欢迎参与项目开发，具体流程请参考 [贡献指南](CONTRIBUTING.md)。
