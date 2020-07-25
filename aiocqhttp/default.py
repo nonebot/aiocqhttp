@@ -94,5 +94,5 @@ __pdoc__['before_request'] = """
 
 before_meta_event = default_bot.before_meta_event
 __pdoc__['before_meta_event'] = """
-注册默认 bot 对象的元事件处理函前的钩子数，用作装饰器。
+注册默认 bot 对象的元事件处理前的钩子函数，用作装饰器。
 """
