@@ -51,7 +51,7 @@ def _deco_maker(deco_method: Callable, type_: str) -> Callable:
                 deco_method(self, type_)(func)
             return func
 
-        if isinstance(arg, Callable):
+        if callable(arg):
             return deco(arg)
         return deco
 
