@@ -1,9 +1,5 @@
 # 更新日志
 
-## v1.3.1
-
-- 支持发送闪照，使用 `MessageSegment.image(url, destruct=True)` 构造图片消息段即可
-
 ## v1.3.0
 
 - `CQHttp` 类新增 `on_startup` 装饰器，用于注册 bot 对象启动时钩子函数
