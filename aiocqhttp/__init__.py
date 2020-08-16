@@ -208,15 +208,19 @@ class CQHttp(AsyncApi):
             self._sync_api = SyncApi(self._api, self._loop)
         return self._sync_api
 
-    def run(self, host: str = None, port: int = None, *args, **kwargs) -> None:
+    def run(self,
+            host: str = '127.0.0.1',
+            port: int = 8080,
+            *args,
+            **kwargs) -> None:
         """运行 bot 对象，实际就是运行 Quart app，参数与 `Quart.run` 一致。"""
         if 'use_reloader' not in kwargs:
             kwargs['use_reloader'] = False
         self._server_app.run(host=host, port=port, *args, **kwargs)
 
     def run_task(self,
-                 host: str = None,
-                 port: int = None,
+                 host: str = '127.0.0.1',
+                 port: int = 8080,
                  *args,
                  **kwargs) -> Coroutine[None, None, None]:
         if 'use_reloader' not in kwargs:
