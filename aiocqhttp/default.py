@@ -6,10 +6,23 @@ from . import CQHttp
 from .api_impl import LazyApi
 
 __all__ = [
-    'default_bot', 'default_server_app', 'api', 'sync_api',
-    'reconfigure_default_bot', 'run', 'send', 'before_sending',
-    'on', 'on_message', 'on_notice', 'on_request', 'on_meta_event',
-    'before', 'before_message', 'before_notice', 'before_request',
+    'default_bot',
+    'default_server_app',
+    'api',
+    'sync_api',
+    'reconfigure_default_bot',
+    'run',
+    'send',
+    'before_sending',
+    'on',
+    'on_message',
+    'on_notice',
+    'on_request',
+    'on_meta_event',
+    'before',
+    'before_message',
+    'before_notice',
+    'before_request',
     'before_meta_event',
 ]
 

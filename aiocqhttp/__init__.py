@@ -31,7 +31,10 @@ from . import exceptions
 from .exceptions import *  # noqa: F401, F403
 
 __all__ = [
-    'CQHttp', 'Event', 'Message', 'MessageSegment',
+    'CQHttp',
+    'Event',
+    'Message',
+    'MessageSegment',
 ]
 __all__ += exceptions.__all__
 
@@ -39,8 +42,11 @@ __pdoc__ = {}
 
 
 def _deco_maker(deco_method: Callable, type_: str) -> Callable:
-    def deco_deco(self, arg: Optional[Union[str, Callable]] = None,
+
+    def deco_deco(self,
+                  arg: Optional[Union[str, Callable]] = None,
                   *sub_event_names: str) -> Callable:
+
         def deco(func: Callable) -> Callable:
             if isinstance(arg, str):
                 e = [type_ + '.' + e for e in [arg] + list(sub_event_names)]
@@ -84,7 +90,9 @@ class CQHttp(AsyncApi):
     发送请求并获取调用结果。
     """
 
-    def __init__(self, import_name: str = '', *,
+    def __init__(self,
+                 import_name: str = '',
+                 *,
                  api_root: Optional[str] = None,
                  access_token: Optional[str] = None,
                  secret: Optional[AnyStr] = None,
@@ -125,19 +133,16 @@ class CQHttp(AsyncApi):
 
         self._server_app = Quart(import_name, **(server_app_kwargs or {}))
         self._server_app.before_serving(self._before_serving)
-        self._server_app.add_url_rule('/', methods=['POST'],
+        self._server_app.add_url_rule('/',
+                                      methods=['POST'],
                                       view_func=self._handle_http_event)
         for p in ('/ws', '/ws/event', '/ws/api'):
-            self._server_app.add_websocket(p, strict_slashes=False,
+            self._server_app.add_websocket(p,
+                                           strict_slashes=False,
                                            view_func=self._handle_wsr)
 
-        self._configure(
-            api_root,
-            access_token,
-            secret,
-            message_class,
-            api_timeout_sec
-        )
+        self._configure(api_root, access_token, secret, message_class,
+                        api_timeout_sec)
 
     def _configure(self,
                    api_root: Optional[str] = None,
@@ -151,8 +156,8 @@ class CQHttp(AsyncApi):
         self._secret = secret
         self._api._http_api = HttpApi(api_root, access_token, api_timeout_sec)
         self._wsr_api_clients = {}  # connected wsr api clients
-        self._api._wsr_api = WebSocketReverseApi(
-            self._wsr_api_clients, api_timeout_sec)
+        self._api._wsr_api = WebSocketReverseApi(self._wsr_api_clients,
+                                                 api_timeout_sec)
 
     async def _before_serving(self):
         self._loop = asyncio.get_running_loop()
@@ -209,8 +214,11 @@ class CQHttp(AsyncApi):
             kwargs['use_reloader'] = False
         self._server_app.run(host=host, port=port, *args, **kwargs)
 
-    def run_task(self, host: str = None, port: int = None,
-                 *args, **kwargs) -> Coroutine[None, None, None]:
+    def run_task(self,
+                 host: str = None,
+                 port: int = None,
+                 *args,
+                 **kwargs) -> Coroutine[None, None, None]:
         if 'use_reloader' not in kwargs:
             kwargs['use_reloader'] = False
         return self._server_app.run_task(host=host, port=port, *args, **kwargs)
@@ -573,13 +581,14 @@ class CQHttp(AsyncApi):
 
         if self._message_class and 'message' in ev:
             ev['message'] = self._message_class(ev['message'])
-        results = list(filter(lambda r: r is not None,
-                              await self._bus.emit(event_name, ev)))
+        results = list(
+            filter(lambda r: r is not None, await
+                   self._bus.emit(event_name, ev)))
         # return the first non-none result
         return results[0] if results else None
 
-    async def _handle_event_with_response(
-            self, payload: Dict[str, Any]) -> None:
+    async def _handle_event_with_response(self, payload: Dict[str,
+                                                              Any]) -> None:
         response = await self._handle_event(payload)
         if isinstance(response, dict):
             payload.pop('message', None)  # avoid wasting bandwidth
@@ -590,7 +599,7 @@ class CQHttp(AsyncApi):
                 await self._api.call_action(
                     self_id=payload['self_id'],
                     action='.handle_quick_operation_async',
-                    context=payload, operation=response
-                )
+                    context=payload,
+                    operation=response)
             except Error:
                 pass

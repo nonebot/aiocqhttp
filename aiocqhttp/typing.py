@@ -10,5 +10,5 @@ __all__ = [
     'Message_T',
 ]
 
-Message_T = Union[str, Dict[str, Any], List[Dict[str, Any]],
-                  MessageSegment, Message]
+Message_T = Union[str, Dict[str, Any], List[Dict[str, Any]], MessageSegment,
+                  Message]

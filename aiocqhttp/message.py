@@ -53,7 +53,9 @@ class MessageSegment(dict):
     ```
     """
 
-    def __init__(self, d: Optional[Dict[str, Any]] = None, *,
+    def __init__(self,
+                 d: Optional[Dict[str, Any]] = None,
+                 *,
                  type_: Optional[str] = None,
                  data: Optional[Dict[str, str]] = None):
         super().__init__()
@@ -108,8 +110,8 @@ class MessageSegment(dict):
         if self.type == 'text':
             return escape(self.data.get('text', ''), escape_comma=False)
 
-        params = ','.join(('{}={}'.format(k, escape(str(v)))
-                           for k, v in self.data.items()))
+        params = ','.join(
+            ('{}={}'.format(k, escape(str(v))) for k, v in self.data.items()))
         if params:
             params = ',' + params
         return '[CQ:{type}{params}]'.format(type=self.type, params=params)
@@ -144,19 +146,21 @@ class MessageSegment(dict):
     def image(file: str, destruct: bool = False) -> 'MessageSegment':
         """图片。"""
         if destruct:
-            return MessageSegment(type_='image', data={
-                'file': file,
-                'destruct': '1'
-            })
+            return MessageSegment(type_='image',
+                                  data={
+                                      'file': file,
+                                      'destruct': '1'
+                                  })
         return MessageSegment(type_='image', data={'file': file})
 
     @staticmethod
     def record(file: str, magic: bool = False) -> 'MessageSegment':
         """语音。"""
-        return MessageSegment(type_='record', data={
-            'file': file,
-            'magic': _b2s(magic)
-        })
+        return MessageSegment(type_='record',
+                              data={
+                                  'file': file,
+                                  'magic': _b2s(magic)
+                              })
 
     @staticmethod
     def at(user_id: int) -> 'MessageSegment':
@@ -185,70 +189,85 @@ class MessageSegment(dict):
                               data={'ignore': _b2s(ignore_failure)})
 
     @staticmethod
-    def share(url: str, title: str, content: str = '',
+    def share(url: str,
+              title: str,
+              content: str = '',
               image_url: str = '') -> 'MessageSegment':
         """链接分享。"""
-        return MessageSegment(type_='share', data={
-            'url': url,
-            'title': title,
-            'content': content,
-            'image': image_url
-        })
+        return MessageSegment(type_='share',
+                              data={
+                                  'url': url,
+                                  'title': title,
+                                  'content': content,
+                                  'image': image_url
+                              })
 
     @staticmethod
     def contact_user(id_: int) -> 'MessageSegment':
         """推荐好友。"""
-        return MessageSegment(type_='contact', data={
-            'type': 'qq',
-            'id': str(id_)
-        })
+        return MessageSegment(type_='contact',
+                              data={
+                                  'type': 'qq',
+                                  'id': str(id_)
+                              })
 
     @staticmethod
     def contact_group(id_: int) -> 'MessageSegment':
         """推荐群。"""
-        return MessageSegment(type_='contact', data={
-            'type': 'group',
-            'id': str(id_)
-        })
+        return MessageSegment(type_='contact',
+                              data={
+                                  'type': 'group',
+                                  'id': str(id_)
+                              })
 
     @staticmethod
-    def location(latitude: float, longitude: float, title: str = '',
+    def location(latitude: float,
+                 longitude: float,
+                 title: str = '',
                  content: str = '') -> 'MessageSegment':
         """位置。"""
-        return MessageSegment(type_='location', data={
-            'lat': str(latitude),
-            'lon': str(longitude),
-            'title': title,
-            'content': content
-        })
+        return MessageSegment(type_='location',
+                              data={
+                                  'lat': str(latitude),
+                                  'lon': str(longitude),
+                                  'title': title,
+                                  'content': content
+                              })
 
     @staticmethod
-    def music(type_: str, id_: int,
+    def music(type_: str,
+              id_: int,
               style: Optional[int] = None) -> 'MessageSegment':
         """音乐"""
         if style is not None:
-            return MessageSegment(type_='music', data={
-                'type': type_,
-                'id': str(id_),
-                'style': str(style)
-            })
-        return MessageSegment(type_='music', data={
-            'type': type_,
-            'id': str(id_)
-        })
+            return MessageSegment(type_='music',
+                                  data={
+                                      'type': type_,
+                                      'id': str(id_),
+                                      'style': str(style)
+                                  })
+        return MessageSegment(type_='music',
+                              data={
+                                  'type': type_,
+                                  'id': str(id_)
+                              })
 
     @staticmethod
-    def music_custom(url: str, audio_url: str, title: str, content: str = '',
+    def music_custom(url: str,
+                     audio_url: str,
+                     title: str,
+                     content: str = '',
                      image_url: str = '') -> 'MessageSegment':
         """音乐自定义分享。"""
-        return MessageSegment(type_='music', data={
-            'type': 'custom',
-            'url': url,
-            'audio': audio_url,
-            'title': title,
-            'content': content,
-            'image': image_url
-        })
+        return MessageSegment(type_='music',
+                              data={
+                                  'type': 'custom',
+                                  'url': url,
+                                  'audio': audio_url,
+                                  'title': title,
+                                  'content': content,
+                                  'image': image_url
+                              })
 
 
 class Message(list):
@@ -269,15 +288,16 @@ class Message(list):
 
     @staticmethod
     def _split_iter(msg_str: str) -> Iterable[MessageSegment]:
+
         def iter_function_name_and_extra() -> Iterable[Tuple[str, str]]:
             text_begin = 0
-            for cqcode in re.finditer(r'\[CQ:(?P<type>[a-zA-Z0-9-_.]+)'
-                                      r'(?P<params>'
-                                      r'(?:,[a-zA-Z0-9-_.]+=?[^,\]]*)*'
-                                      r'),?\]',
-                                      msg_str):
-                yield 'text', unescape(
-                    msg_str[text_begin:cqcode.pos + cqcode.start()])
+            for cqcode in re.finditer(
+                    r'\[CQ:(?P<type>[a-zA-Z0-9-_.]+)'
+                    r'(?P<params>'
+                    r'(?:,[a-zA-Z0-9-_.]+=?[^,\]]*)*'
+                    r'),?\]', msg_str):
+                yield 'text', unescape(msg_str[text_begin:cqcode.pos +
+                                               cqcode.start()])
                 text_begin = cqcode.pos + cqcode.end()
                 yield cqcode.group('type'), cqcode.group('params').lstrip(',')
             yield 'text', unescape(msg_str[text_begin:])
@@ -289,10 +309,12 @@ class Message(list):
                     yield MessageSegment(type_=function_name,
                                          data={'text': extra})
             else:
-                data = {k: v for k, v in map(
-                    lambda x: x.split('=', maxsplit=1),
-                    filter(lambda x: x, (x.lstrip() for x in extra.split(',')))
-                )}
+                data = {
+                    k: v for k, v in map(
+                        lambda x: x.split('=', maxsplit=1),
+                        filter(lambda x: x, (
+                            x.lstrip() for x in extra.split(','))))
+                }
                 yield MessageSegment(type_=function_name, data=data)
 
     def __str__(self):

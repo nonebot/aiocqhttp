@@ -59,9 +59,7 @@ class HttpApi(AsyncApi):
     实现通过 HTTP 调用 CQHTTP API。
     """
 
-    def __init__(self,
-                 api_root: Optional[str],
-                 access_token: Optional[str],
+    def __init__(self, api_root: Optional[str], access_token: Optional[str],
                  timeout_sec: float):
         super().__init__()
         self._api_root = api_root.rstrip('/') + '/' if api_root else None
@@ -79,7 +77,8 @@ class HttpApi(AsyncApi):
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.post(self._api_root + action,
-                                         json=params, headers=headers)
+                                         json=params,
+                                         headers=headers)
             if 200 <= resp.status_code < 300:
                 return _handle_api_result(json.loads(resp.text))
             raise HttpFailed(resp.status_code)
@@ -132,8 +131,7 @@ class WebSocketReverseApi(AsyncApi):
     实现通过反向 WebSocket 调用 CQHTTP API。
     """
 
-    def __init__(self,
-                 connected_clients: Dict[str, Websocket],
+    def __init__(self, connected_clients: Dict[str, Websocket],
                  timeout_sec: float):
         super().__init__()
         self._clients = connected_clients
@@ -155,11 +153,16 @@ class WebSocketReverseApi(AsyncApi):
             raise ApiNotAvailable
 
         seq = _SequenceGenerator.next()
-        await api_ws.send(json.dumps({
-            'action': action, 'params': params, 'echo': {'seq': seq}
-        }))
-        return _handle_api_result(
-            await ResultStore.fetch(seq, self._timeout_sec))
+        await api_ws.send(
+            json.dumps({
+                'action': action,
+                'params': params,
+                'echo': {
+                    'seq': seq
+                }
+            }))
+        return _handle_api_result(await
+                                  ResultStore.fetch(seq, self._timeout_sec))
 
 
 class UnifiedApi(AsyncApi):
@@ -215,10 +218,8 @@ class SyncApi(Api):
 
     def call_action(self, action: str, **params) -> Any:
         """同步地调用 CQHTTP API。"""
-        return sync_wait(
-            coro=self._async_api.call_action(action, **params),
-            loop=self._loop
-        )
+        return sync_wait(coro=self._async_api.call_action(action, **params),
+                         loop=self._loop)
 
 
 class LazyApi(Api):

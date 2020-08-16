@@ -5,8 +5,8 @@
 首先 fork 本项目，然后克隆并安装：
 
 ```bash
-git clone git@github.com:YOUR_USERNAME/python-aiocqhttp
-cd python-aiocqhttp
+git clone git@github.com:YOUR_USERNAME/aiocqhttp
+cd aiocqhttp
 pip install -e .   # 注意点号
 ```
 
@@ -16,10 +16,16 @@ pip install -e .   # 注意点号
 
 ## 代码风格
 
-请使用 Flake8 确保代码符合 PEP 8：
+请使用 YAPF 对代码进行格式下：
 
 ```bash
-flake8 aiocqhttp
+yapf --style .style.yapf --in-place --recursive aiocqhttp scripts demo.py
+```
+
+请使用 Flake8 确保代码符合规范：
+
+```bash
+flake8 --config .flake8
 ```
 
 另外，变量、函数、类、方法、模块等的命名应与项目其它部分一致，且含义清晰。

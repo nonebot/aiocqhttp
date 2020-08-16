@@ -14,14 +14,15 @@ with open(api_md_path, 'r', encoding='utf-8') as f:
 content = content.split('## API 列表', maxsplit=1)[1]
 content = content.split('## 试验性 API 列表', maxsplit=1)[0]
 
-res = re.findall(r'###\s*`/([_\w]+)`(.+?)\r?\n'
-                 r'.*?'
-                 r'####\s*参数\r?\n'
-                 r'(.+?)'
-                 r'####\s*响应数据\r?\n'
-                 r'(.+?)(?=\n##)',
-                 content,
-                 flags=re.MULTILINE | re.DOTALL)
+res = re.findall(
+    r'###\s*`/([_\w]+)`(.+?)\r?\n'
+    r'.*?'
+    r'####\s*参数\r?\n'
+    r'(.+?)'
+    r'####\s*响应数据\r?\n'
+    r'(.+?)(?=\n##)',
+    content,
+    flags=re.MULTILINE | re.DOTALL)
 
 API_METHOD_TEMPLATE = """\
     def {action}(
@@ -64,20 +65,16 @@ class Api:
         params = ''
         params_description = ''
         if self.params:
-            params = (',\n' + ' ' * 12).join(
-                [', *'] + [str(p) for p in self.params]
-            )
-            params_description = ('\n' + ' ' * 12).join(
-                ['\n\n' +
-                 ' ' * 8 + 'Args:'] + [p.docstring() for p in self.params]
-            )
-        return API_METHOD_TEMPLATE.format(
-            action=self.action,
-            params=params,
-            ret=self.ret,
-            description=self.description + '。',
-            params_description=params_description
-        )
+            params = (',\n' + ' ' * 12).join([', *'] +
+                                             [str(p) for p in self.params])
+            params_description = (
+                '\n' + ' ' * 12).join(['\n\n' + ' ' * 8 + 'Args:'] +
+                                      [p.docstring() for p in self.params])
+        return API_METHOD_TEMPLATE.format(action=self.action,
+                                          params=params,
+                                          ret=self.ret,
+                                          description=self.description + '。',
+                                          params_description=params_description)
 
 
 type_mappings = {
@@ -114,8 +111,7 @@ for api in api_list:
             .replace('true', 'True') \
             .replace('false', 'False')
     api.params = params
-    api.params.append(
-        ApiParam('self_id', 'Optional[int]', 'None', '机器人 QQ 号'))
+    api.params.append(ApiParam('self_id', 'Optional[int]', 'None', '机器人 QQ 号'))
     if api.ret.startswith('|'):
         api.ret = 'Dict[str, Any]'
     elif '数组' in api.ret:
@@ -127,8 +123,8 @@ for api in api_list:
 
 os.chdir(os.path.dirname(os.path.dirname(__file__)) or '.')
 
-with open(os.path.join('scripts', 'api.pyi.template'),
-          'r', encoding='utf-8') as f:
+with open(os.path.join('scripts', 'api.pyi.template'), 'r',
+          encoding='utf-8') as f:
     stub_template = f.read()
 
 api_methods = '\n'.join([str(api) for api in api_list])

@@ -3,8 +3,13 @@
 """
 
 __all__ = [
-    'Error', 'ApiNotAvailable', 'ApiError',
-    'HttpFailed', 'ActionFailed', 'NetworkError', 'TimingError',
+    'Error',
+    'ApiNotAvailable',
+    'ApiError',
+    'HttpFailed',
+    'ActionFailed',
+    'NetworkError',
+    'TimingError',
 ]
 
 

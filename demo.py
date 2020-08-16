@@ -29,8 +29,10 @@ async def handle_group_increase(event: Event):
                                            user_id=event.user_id)
     nickname = info['nickname']
     name = nickname if nickname else '新人'
-    await bot.send(event, message=f'欢迎{name}～',
-                   at_sender=True, auto_escape=True)
+    await bot.send(event,
+                   message=f'欢迎{name}～',
+                   at_sender=True,
+                   auto_escape=True)
 
 
 @bot.on_request('group', 'friend')

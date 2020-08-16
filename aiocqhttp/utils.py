@@ -19,8 +19,7 @@ def ensure_async(func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
         return run_sync(func)
 
 
-def sync_wait(coro: Awaitable[Any],
-              loop: asyncio.AbstractEventLoop) -> Any:
+def sync_wait(coro: Awaitable[Any], loop: asyncio.AbstractEventLoop) -> Any:
     """
     在 `loop` 中线程安全地运行 `coro`，并同步地等待其运行完成，返回运行结果。
     """
@@ -28,8 +27,8 @@ def sync_wait(coro: Awaitable[Any],
     return fut.result()
 
 
-async def run_async_funcs(funcs: Iterable[Callable[..., Awaitable[Any]]],
-                          *args, **kwargs) -> List[Any]:
+async def run_async_funcs(funcs: Iterable[Callable[..., Awaitable[Any]]], *args,
+                          **kwargs) -> List[Any]:
     """
     同时运行多个异步函数，并等待所有函数运行完成，返回运行结果列表。
     """

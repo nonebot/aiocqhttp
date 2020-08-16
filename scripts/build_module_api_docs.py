@@ -3,8 +3,7 @@ import sys
 
 os.chdir(os.path.dirname(os.path.dirname(__file__)) or '.')
 
-os.system(sys.executable +
-          ' -m pdoc'
+os.system(sys.executable + ' -m pdoc'
           '   --html'
           '   -o docs/module'  # cwd should be project dir
           '   -c html_lang="\'zh\'"'
