@@ -1,6 +1,6 @@
 # aiocqhttp
 
-[![License](https://img.shields.io/github/license/cqmoe/python-aiocqhttp.svg)](LICENSE)
+[![License](https://img.shields.io/github/license/nonebot/aiocqhttp.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/aiocqhttp.svg)](https://pypi.python.org/pypi/aiocqhttp)
 ![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)
 ![CQHTTP Version](https://img.shields.io/badge/cqhttp-4.8+-black.svg)
@@ -14,7 +14,7 @@
 
 ## 文档
 
-使用方法见 [文档](https://aiocqhttp.cqp.moe/)。
+使用方法见 [文档](https://aiocqhttp.nonebot.dev/)。
 
 ## 遇到问题
 
