@@ -55,12 +55,12 @@ class ActionFailed(ApiError):
     ```
     """
 
-    def __init__(self, retcode: int):
-        self.retcode = retcode
-        """返回码，若大于 0 则是由 CQHTTP 返回，若小于 0 则是由 酷Q 返回。"""
+    def __init__(self, result: dict):
+        self.info = result
 
     def __repr__(self):
-        return f'<ActionFailed, retcode={self.retcode}>'
+        return f"<ActionFailed " + ", ".join(
+            f"{k}={v}" for k, v in self.info.items()) + ">"
 
     def __str__(self):
         return self.__repr__()
