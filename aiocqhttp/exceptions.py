@@ -55,8 +55,8 @@ class ActionFailed(ApiError):
     ```
     """
 
-    def __init__(self, **kwargs):
-        self.info = kwargs
+    def __init__(self, result: dict):
+        self.info = result
 
     def __repr__(self):
         return f"<ActionFailed " + ", ".join(
