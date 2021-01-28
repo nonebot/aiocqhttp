@@ -5,7 +5,7 @@
 import abc
 import asyncio
 import sys
-from typing import Callable, Dict, Any, Optional, Union, Awaitable
+from typing import Callable, Dict, Any, Optional, Set, Union, Awaitable
 
 from .api import Api
 
@@ -131,23 +131,25 @@ class WebSocketReverseApi(AsyncApi):
     实现通过反向 WebSocket 调用 CQHTTP API。
     """
 
-    def __init__(self, connected_clients: Dict[str, Websocket],
+    def __init__(self, connected_api_clients: Dict[str, Websocket],
+                 connected_event_clients: Set[Websocket],
                  timeout_sec: float):
         super().__init__()
-        self._clients = connected_clients
+        self._api_clients = connected_api_clients
+        self._event_clients = connected_event_clients
         self._timeout_sec = timeout_sec
 
     async def call_action(self, action: str, **params) -> Any:
         api_ws = None
         if params.get('self_id'):
             # 明确指定
-            api_ws = self._clients.get(str(params['self_id']))
-        elif event_ws and event_ws.headers['X-Self-ID'] in self._clients:
+            api_ws = self._api_clients.get(str(params['self_id']))
+        elif event_ws and event_ws in self._event_clients:
             # 没有指定，但在事件处理函数中
-            api_ws = self._clients.get(event_ws.headers['X-Self-ID'])
-        elif len(self._clients) == 1:
+            api_ws = self._api_clients.get(event_ws.headers['X-Self-ID'])
+        elif len(self._api_clients) == 1:
             # 没有指定，不在事件处理函数中，但只有一个连接
-            api_ws = tuple(self._clients.values())[0]
+            api_ws = tuple(self._api_clients.values())[0]
 
         if not api_ws:
             raise ApiNotAvailable
