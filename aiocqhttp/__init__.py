@@ -156,7 +156,9 @@ class CQHttp(AsyncApi):
         self._secret = secret
         self._api._http_api = HttpApi(api_root, access_token, api_timeout_sec)
         self._wsr_api_clients = {}  # connected wsr api clients
+        self._wsr_event_clients = set()
         self._api._wsr_api = WebSocketReverseApi(self._wsr_api_clients,
+                                                 self._wsr_event_clients,
                                                  api_timeout_sec)
 
     async def _before_serving(self):
@@ -513,6 +515,7 @@ class CQHttp(AsyncApi):
             await self._handle_wsr_universal()
 
     async def _handle_wsr_event(self) -> None:
+        self._add_wsr_event_client()
         try:
             while True:
                 try:
@@ -526,7 +529,7 @@ class CQHttp(AsyncApi):
 
                 asyncio.create_task(self._handle_event_with_response(payload))
         finally:
-            pass
+            self._remove_wsr_event_client()
 
     async def _handle_wsr_api(self) -> None:
         self._add_wsr_api_client()
@@ -541,6 +544,7 @@ class CQHttp(AsyncApi):
 
     async def _handle_wsr_universal(self) -> None:
         self._add_wsr_api_client()
+        self._add_wsr_event_client()
         try:
             while True:
                 try:
@@ -560,6 +564,7 @@ class CQHttp(AsyncApi):
                     # is a api result
                     ResultStore.add(payload)
         finally:
+            self._remove_wsr_event_client()
             self._remove_wsr_api_client()
 
     def _add_wsr_api_client(self) -> None:
@@ -574,6 +579,14 @@ class CQHttp(AsyncApi):
             # because we allow wildcard ws connections,
             # that is, the self_id may be '*'
             del self._wsr_api_clients[self_id]
+
+    def _add_wsr_event_client(self) -> None:
+        ws = websocket._get_current_object()
+        self._wsr_event_clients.add(ws)
+
+    def _remove_wsr_event_client(self) -> None:
+        ws = websocket._get_current_object()
+        self._wsr_event_clients.discard(ws)
 
     async def _handle_event(self, payload: Dict[str, Any]) -> Any:
         ev = Event.from_payload(payload)
