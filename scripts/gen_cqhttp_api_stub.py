@@ -114,8 +114,8 @@ def create_params(param_block: str):
     if param_block.strip() == '无':
         params.append(ApiParam('self_id', 'Optional[int]', 'None', '机器人 QQ 号'))
         return params
-    if re.search(r'^\|\s*字段名\s*\|\s*数据类型\s*\|\s*默认值\s*\|\s*说明\s*\|', param_block,
-                re.MULTILINE):
+    if re.search(r'^\|\s*字段名\s*\|\s*数据类型\s*\|\s*默认值\s*\|\s*说明\s*\|',
+                 param_block, re.MULTILINE):
         rows = re.findall(r'^\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|',
                           param_block, re.MULTILINE)
     else:  # ^| 字段名 | 数据类型 | 说明 |
