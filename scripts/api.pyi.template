@@ -1,13 +1,48 @@
-from typing import Union, Awaitable, Any, Optional, Dict, List
+import sys
+from typing import Union, Awaitable, Any, Callable, Optional, Dict, List
 
 from aiocqhttp.typing import Message_T
+
+
+if sys.version_info >= (3, 8, 0):
+    from typing import TypedDict
+{api_returns_38}
+else:
+{api_returns_37}
 
 
 class Api:
     def call_action(
             self,
             action: str,
-            **params
+            **params,
     ) -> Union[Awaitable[Any], Any]: ...
 
+    def __getattr__(
+            self,
+            item: str,
+    ) -> Callable[..., Union[Awaitable[Any], Any]]: ...
+
 {api_methods}
+
+
+# definition to avoid union return types
+class AsyncApi(Api):
+    async def call_action(
+            self,
+            action: str,
+            **params,
+    ) -> Any: ...
+
+{api_methods_async}
+
+
+# definition to avoid union return types
+class SyncApi(Api):
+    def call_action(
+            self,
+            action: str,
+            **params,
+    ) -> Any: ...
+
+{api_methods_sync}
