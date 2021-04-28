@@ -17,7 +17,7 @@ setup(
     package_data={
         '': ['*.pyi'],
     },
-    install_requires=['Quart>=0.11,<0.12', 'httpx>=0.11,<1.0'],
+    install_requires=['Quart>=0.14,<0.15', 'httpx>=0.11,<1.0'],
     extras_require={
         'all': ['ujson'],
     },

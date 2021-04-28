@@ -16,7 +16,7 @@ except ImportError:
 
 import httpx
 from quart import websocket as event_ws
-from quart.wrappers.request import Websocket
+from quart.wrappers.websocket import Websocket
 
 from .exceptions import ActionFailed, ApiNotAvailable, HttpFailed, NetworkError
 from .utils import sync_wait
