@@ -35,10 +35,10 @@ default_server_app = default_bot.server_app
 """默认 bot 对象的 Quart app。"""
 
 api = default_bot.api
-"""默认 bot 对象的 `aiocqhttp.api_impl.AsyncApi` 对象，用于异步地调用 CQHTTP API。"""
+"""默认 bot 对象的 `aiocqhttp.api.AsyncApi` 对象，用于异步地调用 CQHTTP API。"""
 
 sync_api = LazyApi(lambda: default_bot.sync)
-"""默认 bot 对象的 `aiocqhttp.api_impl.SyncApi` 对象，用于同步地调用 CQHTTP API。"""
+"""默认 bot 对象的 `aiocqhttp.api.SyncApi` 对象，用于同步地调用 CQHTTP API。"""
 
 reconfigure_default_bot = default_bot._configure
 __pdoc__['reconfigure_default_bot'] = """

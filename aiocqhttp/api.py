@@ -28,3 +28,27 @@ class Api:
                     item: str) -> Callable[..., Union[Awaitable[Any], Any]]:
         """获取一个可调用对象，用于调用对应 API。"""
         return functools.partial(self.call_action, item)
+
+
+class AsyncApi(Api):
+    """
+    异步 API 接口类。
+
+    继承此类的具体实现类应实现异步的 `call_action` 方法。
+    """
+
+    @abc.abstractmethod
+    async def call_action(self, action: str, **params) -> Any:
+        ...
+
+
+class SyncApi(Api):
+    """
+    同步 API 接口类。
+
+    继承此类的具体实现类应实现同步的 `call_action` 方法。
+    """
+
+    @abc.abstractmethod
+    def call_action(self, action: str, **params) -> Any:
+        ...

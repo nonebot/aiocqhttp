@@ -2,12 +2,11 @@
 此模块提供了 CQHTTP API 相关的实现类。
 """
 
-import abc
 import asyncio
 import sys
 from typing import Callable, Dict, Any, Optional, Set, Union, Awaitable
 
-from .api import Api
+from .api import Api, AsyncApi, SyncApi
 
 try:
     import ujson as json
@@ -24,18 +23,6 @@ from .utils import sync_wait
 __pdoc__ = {
     'ResultStore': False,
 }
-
-
-class AsyncApi(Api):
-    """
-    异步 API 接口类。
-
-    继承此类的具体实现类应实现异步的 `call_action` 方法。
-    """
-
-    @abc.abstractmethod
-    async def call_action(self, action: str, **params) -> Any:
-        pass
 
 
 def _handle_api_result(result: Optional[Dict[str, Any]]) -> Any:
@@ -205,18 +192,19 @@ class UnifiedApi(AsyncApi):
         return result
 
 
-class SyncApi(Api):
+class SyncWrapperApi(SyncApi):
     """
     封装 `AsyncApi` 对象，使其可同步地调用。
     """
 
-    def __init__(self, async_api: AsyncApi, loop: asyncio.AbstractEventLoop):
+    def __init__(self, async_api: AsyncApi,
+                 loop: Optional[asyncio.AbstractEventLoop] = None):
         """
         `async_api` 参数为 `AsyncApi` 对象，`loop` 参数为用来执行 API
         调用的 event loop。
         """
         self._async_api = async_api
-        self._loop = loop
+        self._loop = loop or asyncio.get_event_loop()
 
     def call_action(self, action: str, **params) -> Any:
         """同步地调用 CQHTTP API。"""

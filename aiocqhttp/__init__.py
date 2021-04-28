@@ -18,7 +18,8 @@ except ImportError:
 
 from quart import Quart, request, abort, jsonify, websocket, Response
 
-from .api_impl import (AsyncApi, SyncApi, HttpApi, WebSocketReverseApi,
+from .api import AsyncApi, SyncApi
+from .api_impl import (SyncWrapperApi, HttpApi, WebSocketReverseApi,
                        UnifiedApi, ResultStore)
 from .bus import EventBus
 from .exceptions import Error, TimingError
@@ -72,7 +73,7 @@ class CQHttp(AsyncApi):
     内部维护了一个 `Quart` 对象作为 web 服务器，提供 HTTP 协议的 ``/`` 和 WebSocket
     协议的 ``/ws/``、``/ws/api/``、``/ws/event/`` 端点供 CQHTTP 连接。
 
-    由于基类 `api_impl.AsyncApi` 继承了 `api.Api` 的 `__getattr__`
+    由于基类 `api.AsyncApi` 继承了 `api.Api` 的 `__getattr__`
     魔术方法，因此可以在 bot 对象上直接调用 CQHTTP API，例如：
 
     ```py
@@ -186,13 +187,13 @@ class CQHttp(AsyncApi):
 
     @property
     def api(self) -> AsyncApi:
-        """`api_impl.AsyncApi` 对象，用于异步地调用 CQHTTP API。"""
+        """`api.AsyncApi` 对象，用于异步地调用 CQHTTP API。"""
         return self._api
 
     @property
     def sync(self) -> SyncApi:
         """
-        `api_impl.SyncApi` 对象，用于同步地调用 CQHTTP API，例如：
+        `api.SyncApi` 对象，用于同步地调用 CQHTTP API，例如：
 
         ```py
         @bot.on_message('group')
@@ -207,7 +208,7 @@ class CQHttp(AsyncApi):
             if not self._loop:
                 raise TimingError('attempt to access sync api '
                                   'before bot is running')
-            self._sync_api = SyncApi(self._api, self._loop)
+            self._sync_api = SyncWrapperApi(self._api, self._loop)
         return self._sync_api
 
     def run(self,
@@ -231,7 +232,7 @@ class CQHttp(AsyncApi):
 
     async def call_action(self, action: str, **params) -> Any:
         """
-        通过内部维护的 `api_impl.AsyncApi` 具体实现类调用 CQHTTP API，``action``
+        通过内部维护的 `api.AsyncApi` 具体实现类调用 CQHTTP API，``action``
         为要调用的 API 动作名，``**params`` 为 API 所需参数。
         """
         return await self._api.call_action(action=action, **params)
