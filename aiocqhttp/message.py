@@ -2,6 +2,7 @@
 此模块提供了消息相关类。
 """
 
+import sys
 import re
 from typing import Iterable, Dict, Tuple, Any, Optional, Union
 
@@ -132,11 +133,21 @@ class MessageSegment(dict):
             return False
         return self.type == other.type and self.data == other.data
 
-    def __add__(self, other: Any):
+    def __iadd__(self, other):
+        raise NotImplementedError
+
+    def __add__(self, other: Any) -> 'Message':
         return Message(self).__add__(other)
 
-    def __radd__(self, other: Any):
+    def __radd__(self, other: Any) -> 'Message':
         return Message(self).__radd__(other)
+
+    if sys.version_info >= (3, 9, 0):
+        def __or__(self, other):
+            raise NotImplementedError
+
+        def __ior__(self, other):
+            raise NotImplementedError
 
     @staticmethod
     def text(text: str) -> 'MessageSegment':
@@ -362,13 +373,12 @@ class Message(list):
     def __init__(self, msg: Any = None, *args, **kwargs):
         """``msg`` 参数为要转换为 `Message` 对象的字符串、列表或字典。"""
         super().__init__(*args, **kwargs)
-        try:
-            if isinstance(msg, (list, str)):
-                self.extend(msg)
-            elif isinstance(msg, dict):
-                self.append(msg)
-        except ValueError:
-            raise ValueError('the msg argument is not recognizable')
+        if isinstance(msg, (list, str)):
+            self.extend(msg)
+        elif isinstance(msg, dict):
+            self.append(msg)
+        else:
+            raise ValueError('the msg argument is not recognized')
 
     @staticmethod
     def _split_iter(msg_str: str) -> Iterable[MessageSegment]:
@@ -404,55 +414,54 @@ class Message(list):
     def __str__(self):
         return ''.join((str(seg) for seg in self))
 
-    def __add__(self, other: Any):
-        result = Message(self)
-        try:
-            if isinstance(other, Message):
-                result.extend(other)
-            elif isinstance(other, MessageSegment):
-                result.append(other)
-            elif isinstance(other, list):
-                result.extend(map(lambda d: MessageSegment(d), other))
-            elif isinstance(other, dict):
-                result.append(MessageSegment(other))
-            elif isinstance(other, str):
-                result.extend(Message._split_iter(other))
-            return result
-        except ValueError:
-            raise ValueError('the addend is not a valid message')
+    def __iadd__(self, other: Any) -> 'Message':
+        if isinstance(other, Message):
+            self.extend(other)
+        elif isinstance(other, MessageSegment):
+            self.append(other)
+        elif isinstance(other, list):
+            self.extend(map(MessageSegment, other))
+        elif isinstance(other, dict):
+            self.append(MessageSegment(other))
+        elif isinstance(other, str):
+            self.extend(Message._split_iter(other))
+        else:
+            raise ValueError('the addend is not a message')
+        return self
 
-    def __radd__(self, other: Any):
+    def __add__(self, other: Any) -> 'Message':
+        result = Message(self)
+        result.__iadd__(other)
+        return result
+
+    def __radd__(self, other: Any) -> 'Message':
         try:
             result = Message(other)
             return result.__add__(self)
         except ValueError:
-            raise ValueError('the left addend is not a valid message')
+            raise ValueError('the left addend is not a message')
 
-    def append(self, obj: Any) -> Any:
+    def append(self, obj: Any) -> 'Message':
         """在消息末尾追加消息段。"""
-        try:
-            if isinstance(obj, MessageSegment):
-                if self and self[-1].type == 'text' and obj.type == 'text':
-                    self[-1].data['text'] += obj.data['text']
-                elif obj.type != 'text' or obj.data['text'] or not self:
-                    super().append(obj)
+        if isinstance(obj, MessageSegment):
+            if self and self[-1].type == 'text' and obj.type == 'text':
+                self[-1].data['text'] += obj.data['text']
+            elif obj.type != 'text' or obj.data['text'] or not self:
+                super().append(obj)
             else:
-                self.append(MessageSegment(obj))
-            return self
-        except ValueError:
-            raise ValueError('the object is not a valid message segment')
+                raise ValueError('the object is not a proper message segment')
+        else:
+            self.append(MessageSegment(obj))
+        return self
 
-    def extend(self, msg: Any) -> Any:
+    def extend(self, msg: Iterable[Any]) -> 'Message':
         """在消息末尾追加消息（字符串或消息段列表）。"""
-        try:
-            if isinstance(msg, str):
-                msg = self._split_iter(msg)
+        if isinstance(msg, str):
+            msg = self._split_iter(msg)
 
-            for seg in msg:
-                self.append(seg)
-            return self
-        except ValueError:
-            raise ValueError('the object is not a valid message')
+        for seg in msg:
+            self.append(seg)
+        return self
 
     def reduce(self) -> None:
         """
