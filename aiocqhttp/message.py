@@ -3,7 +3,9 @@
 """
 
 import re
-from typing import Iterable, Dict, Tuple, Any, Optional
+from typing import Iterable, Dict, Tuple, Any, Optional, Union
+
+from .typing import Message_T
 
 
 def escape(s: str, *, escape_comma: bool = True) -> str:
@@ -28,18 +30,27 @@ def unescape(s: str) -> str:
         .replace('&amp;', '&')
 
 
-def _b2s(b: bool):
-    if b:
-        return 'true'
-    else:
-        return 'false'
+def _optionally_strfy(x: Optional[Any]) -> Optional[str]:
+    if x is not None:
+        if isinstance(x, bool):
+            x = int(x)  # turn boolean to 0/1
+        x = str(x)
+    return x
+
+
+def _remove_optional(d: Dict[str, Optional[str]]) -> Dict[str, str]:
+    """改变原参数。"""
+    for k in tuple(d.keys()):
+        if d[k] is None:
+            del d[k]
+    return d  # type: ignore
 
 
 class MessageSegment(dict):
     """
     消息段，即表示成字典的 CQ 码。
 
-    不建议手动构造消息段；建议使用此类的静态方法构造，例如：
+    除非遇到必须手动构造消息的情况，建议使用此类的静态方法构造，例如：
 
     ```py
     at_seg = MessageSegment.at(10001000)
@@ -143,27 +154,56 @@ class MessageSegment(dict):
         return MessageSegment(type_='face', data={'id': str(id_)})
 
     @staticmethod
-    def image(file: str, destruct: bool = False) -> 'MessageSegment':
+    def image(file: str,
+              destruct: Optional[bool] = None,
+              type: Optional[str] = None,
+              cache: Optional[bool] = None,
+              proxy: Optional[bool] = None,
+              timeout: Optional[int] = None) -> 'MessageSegment':
         """图片。"""
-        if destruct:
-            return MessageSegment(type_='image',
-                                  data={
+        # NOTE: destruct parameter is not part of the onebot v11 std.
+        return MessageSegment(type_='image',
+                              data=_remove_optional({
                                       'file': file,
-                                      'destruct': '1'
-                                  })
-        return MessageSegment(type_='image', data={'file': file})
+                                      'type': _optionally_strfy(type),
+                                      'cache': _optionally_strfy(cache),
+                                      'proxy': _optionally_strfy(proxy),
+                                      'timeout': _optionally_strfy(timeout),
+                                      'destruct': _optionally_strfy(destruct),
+                              }))
 
     @staticmethod
-    def record(file: str, magic: bool = False) -> 'MessageSegment':
+    def record(file: str,
+               magic: Optional[bool] = None,
+               cache: Optional[bool] = None,
+               proxy: Optional[bool] = None,
+               timeout: Optional[int] = None) -> 'MessageSegment':
         """语音。"""
         return MessageSegment(type_='record',
-                              data={
+                              data=_remove_optional({
                                   'file': file,
-                                  'magic': _b2s(magic)
-                              })
+                                  'magic': _optionally_strfy(magic),
+                                  'cache': _optionally_strfy(cache),
+                                  'proxy': _optionally_strfy(proxy),
+                                  'timeout': _optionally_strfy(timeout),
+                              }))
 
     @staticmethod
-    def at(user_id: int) -> 'MessageSegment':
+    def video(file: str,
+              cache: Optional[bool] = None,
+              proxy: Optional[bool] = None,
+              timeout: Optional[int] = None) -> 'MessageSegment':
+        """短视频。"""
+        return MessageSegment(type_='video',
+                              data=_remove_optional({
+                                  'file': file,
+                                  'cache': _optionally_strfy(cache),
+                                  'proxy': _optionally_strfy(proxy),
+                                  'timeout': _optionally_strfy(timeout),
+                              }))
+
+    @staticmethod
+    def at(user_id: Union[int, str]) -> 'MessageSegment':
         """@某人。"""
         return MessageSegment(type_='at', data={'qq': str(user_id)})
 
@@ -179,28 +219,39 @@ class MessageSegment(dict):
 
     @staticmethod
     def shake() -> 'MessageSegment':
-        """戳一戳。"""
+        """戳一戳（窗口抖动）。"""
         return MessageSegment(type_='shake')
 
     @staticmethod
-    def anonymous(ignore_failure: bool = False) -> 'MessageSegment':
+    def poke(type_: str, id_: int) -> 'MessageSegment':
+        """戳一戳。"""
+        return MessageSegment(type_='poke',
+                              data={
+                                'type': type_,
+                                'id': str(id_),
+                              })
+
+    @staticmethod
+    def anonymous(ignore_failure: Optional[bool] = False) -> 'MessageSegment':
         """匿名发消息。"""
         return MessageSegment(type_='anonymous',
-                              data={'ignore': _b2s(ignore_failure)})
+                              data=_remove_optional({
+                                  'ignore': _optionally_strfy(ignore_failure),
+                              }))
 
     @staticmethod
     def share(url: str,
               title: str,
-              content: str = '',
-              image_url: str = '') -> 'MessageSegment':
+              content: Optional[str] = None,
+              image_url: Optional[str] = None) -> 'MessageSegment':
         """链接分享。"""
         return MessageSegment(type_='share',
-                              data={
+                              data=_remove_optional({
                                   'url': url,
                                   'title': title,
                                   'content': content,
-                                  'image': image_url
-                              })
+                                  'image': image_url,
+                              }))
 
     @staticmethod
     def contact_user(id_: int) -> 'MessageSegment':
@@ -223,51 +274,84 @@ class MessageSegment(dict):
     @staticmethod
     def location(latitude: float,
                  longitude: float,
-                 title: str = '',
-                 content: str = '') -> 'MessageSegment':
+                 title: Optional[str] = None,
+                 content: Optional[str] = None) -> 'MessageSegment':
         """位置。"""
         return MessageSegment(type_='location',
-                              data={
+                              data=_remove_optional({
                                   'lat': str(latitude),
                                   'lon': str(longitude),
                                   'title': title,
-                                  'content': content
-                              })
+                                  'content': content,
+                              }))
 
     @staticmethod
     def music(type_: str,
               id_: int,
               style: Optional[int] = None) -> 'MessageSegment':
         """音乐"""
-        if style is not None:
-            return MessageSegment(type_='music',
-                                  data={
-                                      'type': type_,
-                                      'id': str(id_),
-                                      'style': str(style)
-                                  })
+        # NOTE: style parameter is not part of the onebot v11 std.
         return MessageSegment(type_='music',
-                              data={
+                              data=_remove_optional({
                                   'type': type_,
-                                  'id': str(id_)
-                              })
+                                  'id': str(id_),
+                                  'style': _optionally_strfy(style),
+                              }))
 
     @staticmethod
     def music_custom(url: str,
                      audio_url: str,
                      title: str,
-                     content: str = '',
-                     image_url: str = '') -> 'MessageSegment':
+                     content: Optional[str] = None,
+                     image_url: Optional[str] = None) -> 'MessageSegment':
         """音乐自定义分享。"""
         return MessageSegment(type_='music',
-                              data={
+                              data=_remove_optional({
                                   'type': 'custom',
                                   'url': url,
                                   'audio': audio_url,
                                   'title': title,
                                   'content': content,
-                                  'image': image_url
-                              })
+                                  'image': image_url,
+                              }))
+
+    @staticmethod
+    def reply(id_: int) -> 'MessageSegment':
+        """回复时引用消息。"""
+        return MessageSegment(type_='reply', data={'id': str(id_)})
+
+    @staticmethod
+    def forward(id_: int) -> 'MessageSegment':
+        """合并转发。注意：此消息只能被接收！"""
+        return MessageSegment(type_='forward', data={'id': str(id_)})
+
+    @staticmethod
+    def node(id_: int) -> 'MessageSegment':
+        """合并转发节点。"""
+        return MessageSegment(type_='node', data={'id': str(id_)})
+
+    @staticmethod
+    def node_custom(user_id: int,
+                    nickname: str,
+                    content: Message_T) -> 'MessageSegment':
+        """合并转发自定义节点。"""
+        if not isinstance(content, (str, MessageSegment, Message)):
+            content = Message(content)
+        return MessageSegment(type_='node', data={
+            'user_id': str(user_id),
+            'nickname': nickname,
+            'content': str(content),
+        })
+
+    @staticmethod
+    def xml(data: str) -> 'MessageSegment':
+        """XML 消息。"""
+        return MessageSegment(type_='xml', data={'data': data})
+
+    @staticmethod
+    def json(data: str) -> 'MessageSegment':
+        """JSON 消息。"""
+        return MessageSegment(type_='json', data={'data': data})
 
 
 class Message(list):
