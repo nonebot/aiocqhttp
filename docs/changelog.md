@@ -1,11 +1,11 @@
 # 更新日志
 
 ## v1.4.0
-- 调整 `ActionFailed` 错误信息格式 (https://github.com/nonebot/aiocqhttp/pull/44)
-- 修复多个 WebSocket 同时存在时可能引发的 bug (https://github.com/nonebot/aiocqhttp/pull/43)
+- 调整 `ActionFailed` 错误信息格式 [#44](https://github.com/nonebot/aiocqhttp/pull/44)
+- 修复多个 WebSocket 同时存在时可能引发的 bug [#43](https://github.com/nonebot/aiocqhttp/pull/43)
 - 提升 Quart 依赖至 0.14. 如升级 aiocqhttp 后遇到错误请升级依赖
-- 更新消息段 (`MessageSegment`) 和 API stub 至 OneBot v11 标准
-- 调整消息 `+=` 的处理方式 (https://github.com/nonebot/aiocqhttp/issues/48)
+- 更新消息段 (`MessageSegment`) 和 API stub 至 OneBot v11 标准。调整 `api` 和 `api_impl` 的继承关系
+- 调整消息 `+=` 的处理方式 [#48](https://github.com/nonebot/aiocqhttp/issues/48)
 
 ## v1.3.0
 
@@ -13,7 +13,7 @@
 - `CQHttp` 类新增 `on_websocket_connection` 装饰器，用于注册 WebSocket 连接事件处理函数
 - `CQHttp` 类新增 `before_*` 装饰器（`before`、`before_message` 等），用于注册事件处理前的钩子函数，使用方式同 `on_*` 装饰器
 - `CQHttp` 类新增 `before_sending` 装饰器，用于注册发送消息前的钩子函数
-- 修复 `Message` 对象拼接运算的 bug (https://github.com/nonebot/aiocqhttp/pull/32)
+- 修复 `Message` 对象拼接运算的 bug [#32](https://github.com/nonebot/aiocqhttp/pull/32)
 
 ## v1.2.5
 
