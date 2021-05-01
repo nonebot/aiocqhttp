@@ -1,6 +1,7 @@
 # 更新日志
 
 ## v1.4.0
+
 - 调整 `ActionFailed` 错误信息格式 [#44](https://github.com/nonebot/aiocqhttp/pull/44)
 - 修复多个 WebSocket 同时存在时可能引发的 bug [#43](https://github.com/nonebot/aiocqhttp/pull/43)
 - 提升 Quart 依赖至 0.14. 如升级 aiocqhttp 后遇到错误请升级依赖
