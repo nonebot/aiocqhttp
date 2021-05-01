@@ -10,7 +10,7 @@ setup(
     license='MIT License',
     author='Richard Chien',
     author_email='richardchienthebest@gmail.com',
-    description='A Python SDK with async I/O for CQHTTP.',
+    description='A Python SDK with async I/O for OneBot (CQHTTP).',
     long_description=long_description,
     long_description_content_type="text/markdown",
     packages=find_packages(include=('aiocqhttp', 'aiocqhttp.*')),

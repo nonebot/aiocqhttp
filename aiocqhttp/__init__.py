@@ -67,14 +67,14 @@ def _deco_maker(deco_method: Callable, type_: str) -> Callable:
 
 class CQHttp(AsyncApi):
     """
-    CQHTTP 机器人的主类，负责控制整个机器人的运行、事件处理函数的注册、与 CQHTTP
-    的连接、CQHTTP API 的调用等。
+    OneBot (CQHTTP) 机器人的主类，负责控制整个机器人的运行、事件处理函数的注册、与 OneBot
+    OneBot API 的调用等。
 
     内部维护了一个 `Quart` 对象作为 web 服务器，提供 HTTP 协议的 ``/`` 和 WebSocket
-    协议的 ``/ws/``、``/ws/api/``、``/ws/event/`` 端点供 CQHTTP 连接。
+    协议的 ``/ws/``、``/ws/api/``、``/ws/event/`` 端点供 OneBot 连接。
 
     由于基类 `api.AsyncApi` 继承了 `api.Api` 的 `__getattr__`
-    魔术方法，因此可以在 bot 对象上直接调用 CQHTTP API，例如：
+    魔术方法，因此可以在 bot 对象上直接调用 OneBot API，例如：
 
     ```py
     await bot.send_private_msg(user_id=10001000, message='你好')
@@ -87,7 +87,7 @@ class CQHttp(AsyncApi):
     await bot.call_action('set_group_whole_ban', group_id=10010)
     ```
 
-    两种调用 API 的方法最终都通过 `CQHttp.api` 属性来向 CQHTTP
+    两种调用 API 的方法最终都通过 `CQHttp.api` 属性来向 OneBot
     发送请求并获取调用结果。
     """
 
@@ -105,8 +105,8 @@ class CQHttp(AsyncApi):
         ``import_name`` 参数为当前模块（使用 `CQHttp` 的模块）的导入名，通常传入
         ``__name__`` 或不传入。
 
-        ``api_root`` 参数为 CQHTTP API 的 URL，``access_token`` 和
-        ``secret`` 参数为 CQHTTP 配置中填写的对应项。
+        ``api_root`` 参数为 OneBot API 的 URL，``access_token`` 和
+        ``secret`` 参数为 OneBot 配置中填写的对应项。
 
         ``message_class`` 参数为要用来对 `Event.message` 进行转换的消息类，可使用
         `Message`，例如：
@@ -122,7 +122,7 @@ class CQHttp(AsyncApi):
             assert isinstance(event.message, Message)
         ```
 
-        ``api_timeout_sec`` 参数用于设置 CQHTTP API 请求的超时时间，单位是秒。
+        ``api_timeout_sec`` 参数用于设置 OneBot API 请求的超时时间，单位是秒。
 
         ``server_app_kwargs`` 参数用于配置 `Quart` 对象，将以命名参数形式传给入其初始化函数。
         """
@@ -187,13 +187,13 @@ class CQHttp(AsyncApi):
 
     @property
     def api(self) -> AsyncApi:
-        """`api.AsyncApi` 对象，用于异步地调用 CQHTTP API。"""
+        """`api.AsyncApi` 对象，用于异步地调用 OneBot API。"""
         return self._api
 
     @property
     def sync(self) -> SyncApi:
         """
-        `api.SyncApi` 对象，用于同步地调用 CQHTTP API，例如：
+        `api.SyncApi` 对象，用于同步地调用 OneBot API，例如：
 
         ```py
         @bot.on_message('group')
@@ -232,7 +232,7 @@ class CQHttp(AsyncApi):
 
     async def call_action(self, action: str, **params) -> Any:
         """
-        通过内部维护的 `api.AsyncApi` 具体实现类调用 CQHTTP API，``action``
+        通过内部维护的 `api.AsyncApi` 具体实现类调用 OneBot API，``action``
         为要调用的 API 动作名，``**params`` 为 API 所需参数。
         """
         return await self._api.call_action(action=action, **params)
@@ -244,7 +244,7 @@ class CQHttp(AsyncApi):
 
         ``event`` 参数为事件对象，``message`` 参数为要发送的消息。可额外传入 ``at_sender``
         命名参数用于控制是否 at 事件的触发者，默认为 `False`。其它命名参数作为
-        CQHTTP API ``send_msg`` 的参数直接传递。
+        OneBot API ``send_msg`` 的参数直接传递。
         """
         msg = message if isinstance(message, Message) else Message(message)
         await run_async_funcs(self._before_sending_funcs, event, msg, kwargs)
@@ -462,8 +462,6 @@ class CQHttp(AsyncApi):
             global groups
             groups = await bot.get_group_list(self_id=event.self_id)
         ```
-
-        注：仅支持 CQHTTP v4.14+。
         """
         return self.on_meta_event('lifecycle.connect')(func)
 

@@ -19,12 +19,12 @@ class Error(Exception):
 
 
 class ApiNotAvailable(Error):
-    """CQHTTP API 不可用。"""
+    """OneBot API 不可用。"""
     pass
 
 
 class ApiError(Error, RuntimeError):
-    """调用 CQHTTP API 发生错误。"""
+    """调用 OneBot API 发生错误。"""
     pass
 
 
@@ -44,7 +44,7 @@ class HttpFailed(ApiError):
 
 class ActionFailed(ApiError):
     """
-    CQHTTP 已收到 API 请求，但执行失败。
+    OneBot 已收到 API 请求，但执行失败。
 
     ```py
     except ActionFailed as e:

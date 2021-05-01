@@ -1,5 +1,5 @@
 """
-此模块提供了 CQHTTP 事件相关的类。
+此模块提供了 OneBot (CQHTTP) 事件相关的类。
 """
 
 from typing import Dict, Any, Optional
@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional
 
 class Event(dict):
     """
-    封装从 CQHTTP 收到的事件数据对象（字典），提供属性以获取其中的字段。
+    封装从 OneBot (CQHTTP) 收到的事件数据对象（字典），提供属性以获取其中的字段。
 
     除 `type` 和 `detail_type` 属性对于任何事件都有效外，其它属性存在与否（不存在则返回
     `None`）依事件不同而不同。
@@ -16,7 +16,7 @@ class Event(dict):
     @staticmethod
     def from_payload(payload: Dict[str, Any]) -> 'Optional[Event]':
         """
-        从 CQHTTP 事件数据构造 `Event` 对象。
+        从 OneBot 事件数据构造 `Event` 对象。
         """
         try:
             e = Event(payload)
@@ -63,10 +63,10 @@ class Event(dict):
     user_id: Optional[int]  # 用户 ID
     operator_id: Optional[int]  # 操作者 ID
     group_id: Optional[int]  # 群 ID
-    discuss_id: Optional[int]  # 讨论组 ID
+    discuss_id: Optional[int]  # 讨论组 ID，此字段已在 OneBot v11 中移除
     message_id: Optional[int]  # 消息 ID
     message: Optional[Any]  # 消息
-    raw_message: Optional[str]  # 未经 CQHTTP 处理的原始消息
+    raw_message: Optional[str]  # 未经 OneBot (CQHTTP) 处理的原始消息
     sender: Optional[Dict[str, Any]]  # 消息发送者信息
     anonymous: Optional[Dict[str, Any]]  # 匿名信息
     file: Optional[Dict[str, Any]]  # 文件信息

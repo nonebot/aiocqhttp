@@ -1,5 +1,5 @@
 """
-此模块提供了 CQHTTP API 相关的实现类。
+此模块提供了 OneBot (CQHTTP) API 相关的实现类。
 """
 
 import asyncio
@@ -29,7 +29,7 @@ def _handle_api_result(result: Optional[Dict[str, Any]]) -> Any:
     """
     Retrieve 'data' field from the API result object.
 
-    :param result: API result that received from CQHTTP
+    :param result: API result that received from OneBot
     :return: the 'data' field in result object
     :raise ActionFailed: the 'status' field is 'failed'
     """
@@ -43,7 +43,7 @@ class HttpApi(AsyncApi):
     """
     HTTP API 实现类。
 
-    实现通过 HTTP 调用 CQHTTP API。
+    实现通过 HTTP 调用 OneBot API。
     """
 
     def __init__(self, api_root: Optional[str], access_token: Optional[str],
@@ -115,7 +115,7 @@ class WebSocketReverseApi(AsyncApi):
     """
     反向 WebSocket API 实现类。
 
-    实现通过反向 WebSocket 调用 CQHTTP API。
+    实现通过反向 WebSocket 调用 OneBot API。
     """
 
     def __init__(self, connected_api_clients: Dict[str, Websocket],
@@ -207,7 +207,7 @@ class SyncWrapperApi(SyncApi):
         self._loop = loop or asyncio.get_event_loop()
 
     def call_action(self, action: str, **params) -> Any:
-        """同步地调用 CQHTTP API。"""
+        """同步地调用 OneBot API。"""
         return sync_wait(coro=self._async_api.call_action(action, **params),
                          loop=self._loop)
 
@@ -221,6 +221,6 @@ class LazyApi(Api):
         self._api_getter = api_getter
 
     def call_action(self, action: str, **params) -> Union[Awaitable[Any], Any]:
-        """获取 `Api` 对象，并调用 CQHTTP API。"""
+        """获取 `Api` 对象，并调用 OneBot API。"""
         api = self._api_getter()
         return api.call_action(action, **params)

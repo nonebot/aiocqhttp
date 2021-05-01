@@ -2,8 +2,8 @@ from aiocqhttp import CQHttp, ApiError, Event
 
 bot = CQHttp(
     api_root='http://127.0.0.1:5700/',  # 如果使用反向 WebSocket，这里不需要传入
-    access_token='123',  # 应与 CQHTTP 配置中一致，如果没填，这里不需要传入
-    secret='abc',  # 应与 CQHTTP 配置中一致，如果没填，这里不需要传入
+    access_token='123',  # 应与 OneBot (CQHTTP) 配置中一致，如果没填，这里不需要传入
+    secret='abc',  # 应与 OneBot (CQHTTP) 配置中一致，如果没填，这里不需要传入
 )
 
 
@@ -18,7 +18,7 @@ async def handle_msg(event: Event):
     except ApiError:
         pass
 
-    # 返回给 CQHTTP 插件，走快速回复途径
+    # 返回给 OneBot (CQHTTP)，走快速回复途径
     return {'reply': event.message, 'at_sender': False}
 
 
