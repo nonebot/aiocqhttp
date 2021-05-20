@@ -67,8 +67,8 @@ def _deco_maker(deco_method: Callable, type_: str) -> Callable:
 
 class CQHttp(AsyncApi):
     """
-    OneBot (CQHTTP) 机器人的主类，负责控制整个机器人的运行、事件处理函数的注册、与 OneBot
-    OneBot API 的调用等。
+    OneBot (CQHTTP) 机器人的主类，负责控制整个机器人的运行、事件处理函数的注册、OneBot
+    API 的调用等。
 
     内部维护了一个 `Quart` 对象作为 web 服务器，提供 HTTP 协议的 ``/`` 和 WebSocket
     协议的 ``/ws/``、``/ws/api/``、``/ws/event/`` 端点供 OneBot 连接。
