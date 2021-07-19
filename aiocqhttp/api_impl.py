@@ -21,7 +21,7 @@ from .exceptions import ActionFailed, ApiNotAvailable, HttpFailed, NetworkError
 from .utils import sync_wait
 
 __pdoc__ = {
-    'ResultStore': False,
+    "ResultStore": False,
 }
 
 
@@ -34,9 +34,9 @@ def _handle_api_result(result: Optional[Dict[str, Any]]) -> Any:
     :raise ActionFailed: the 'status' field is 'failed'
     """
     if isinstance(result, dict):
-        if result['status'] == 'failed':
+        if result["status"] == "failed":
             raise ActionFailed(result=result)
-        return result.get('data')
+        return result.get("data")
 
 
 class HttpApi(AsyncApi):
@@ -46,10 +46,11 @@ class HttpApi(AsyncApi):
     实现通过 HTTP 调用 OneBot API。
     """
 
-    def __init__(self, api_root: Optional[str], access_token: Optional[str],
-                 timeout_sec: float):
+    def __init__(
+        self, api_root: Optional[str], access_token: Optional[str], timeout_sec: float
+    ):
         super().__init__()
-        self._api_root = api_root.rstrip('/') + '/' if api_root else None
+        self._api_root = api_root.rstrip("/") + "/" if api_root else None
         self._access_token = access_token
         self._timeout_sec = timeout_sec
 
@@ -59,20 +60,20 @@ class HttpApi(AsyncApi):
 
         headers = {}
         if self._access_token:
-            headers['Authorization'] = 'Bearer ' + self._access_token
+            headers["Authorization"] = "Bearer " + self._access_token
 
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.post(self._api_root + action,
-                                         json=params,
-                                         headers=headers)
+                resp = await client.post(
+                    self._api_root + action, json=params, headers=headers
+                )
             if 200 <= resp.status_code < 300:
                 return _handle_api_result(json.loads(resp.text))
             raise HttpFailed(resp.status_code)
         except httpx.InvalidURL:
-            raise NetworkError('API root url invalid')
+            raise NetworkError("API root url invalid")
         except httpx.HTTPError:
-            raise NetworkError('HTTP request failed')
+            raise NetworkError("HTTP request failed")
 
 
 class _SequenceGenerator:
@@ -90,9 +91,10 @@ class ResultStore:
 
     @classmethod
     def add(cls, result: Dict[str, Any]):
-        if isinstance(result.get('echo'), dict) and \
-                isinstance(result['echo'].get('seq'), int):
-            future = cls._futures.get(result['echo']['seq'])
+        if isinstance(result.get("echo"), dict) and isinstance(
+            result["echo"].get("seq"), int
+        ):
+            future = cls._futures.get(result["echo"]["seq"])
             if future:
                 future.set_result(result)
 
@@ -105,7 +107,7 @@ class ResultStore:
         except asyncio.TimeoutError:
             # haven't received any result until timeout,
             # we consider this API call failed with a network error.
-            raise NetworkError('WebSocket API call timeout')
+            raise NetworkError("WebSocket API call timeout")
         finally:
             # don't forget to remove the future object
             del cls._futures[seq]
@@ -118,9 +120,12 @@ class WebSocketReverseApi(AsyncApi):
     实现通过反向 WebSocket 调用 OneBot API。
     """
 
-    def __init__(self, connected_api_clients: Dict[str, Websocket],
-                 connected_event_clients: Set[Websocket],
-                 timeout_sec: float):
+    def __init__(
+        self,
+        connected_api_clients: Dict[str, Websocket],
+        connected_event_clients: Set[Websocket],
+        timeout_sec: float,
+    ):
         super().__init__()
         self._api_clients = connected_api_clients
         self._event_clients = connected_event_clients
@@ -128,12 +133,12 @@ class WebSocketReverseApi(AsyncApi):
 
     async def call_action(self, action: str, **params) -> Any:
         api_ws = None
-        if params.get('self_id'):
+        if params.get("self_id"):
             # 明确指定
-            api_ws = self._api_clients.get(str(params['self_id']))
+            api_ws = self._api_clients.get(str(params["self_id"]))
         elif event_ws and event_ws in self._event_clients:
             # 没有指定，但在事件处理函数中
-            api_ws = self._api_clients.get(event_ws.headers['X-Self-ID'])
+            api_ws = self._api_clients.get(event_ws.headers["X-Self-ID"])
         elif len(self._api_clients) == 1:
             # 没有指定，不在事件处理函数中，但只有一个连接
             api_ws = tuple(self._api_clients.values())[0]
@@ -143,15 +148,9 @@ class WebSocketReverseApi(AsyncApi):
 
         seq = _SequenceGenerator.next()
         await api_ws.send(
-            json.dumps({
-                'action': action,
-                'params': params,
-                'echo': {
-                    'seq': seq
-                }
-            }))
-        return _handle_api_result(await
-                                  ResultStore.fetch(seq, self._timeout_sec))
+            json.dumps({"action": action, "params": params, "echo": {"seq": seq}})
+        )
+        return _handle_api_result(await ResultStore.fetch(seq, self._timeout_sec))
 
 
 class UnifiedApi(AsyncApi):
@@ -161,9 +160,9 @@ class UnifiedApi(AsyncApi):
     同时维护 `HttpApi` 和 `WebSocketReverseApi` 对象，根据可用情况，选择两者中的某个使用。
     """
 
-    def __init__(self,
-                 http_api: Optional[AsyncApi] = None,
-                 wsr_api: Optional[AsyncApi] = None):
+    def __init__(
+        self, http_api: Optional[AsyncApi] = None, wsr_api: Optional[AsyncApi] = None
+    ):
         super().__init__()
         self._http_api = http_api
         self._wsr_api = wsr_api
@@ -197,8 +196,9 @@ class SyncWrapperApi(SyncApi):
     封装 `AsyncApi` 对象，使其可同步地调用。
     """
 
-    def __init__(self, async_api: AsyncApi,
-                 loop: Optional[asyncio.AbstractEventLoop] = None):
+    def __init__(
+        self, async_api: AsyncApi, loop: Optional[asyncio.AbstractEventLoop] = None
+    ):
         """
         `async_api` 参数为 `AsyncApi` 对象，`loop` 参数为用来执行 API
         调用的 event loop。
@@ -208,8 +208,9 @@ class SyncWrapperApi(SyncApi):
 
     def call_action(self, action: str, **params) -> Any:
         """同步地调用 OneBot API。"""
-        return sync_wait(coro=self._async_api.call_action(action, **params),
-                         loop=self._loop)
+        return sync_wait(
+            coro=self._async_api.call_action(action, **params), loop=self._loop
+        )
 
 
 class LazyApi(Api):

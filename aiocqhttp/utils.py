@@ -3,7 +3,7 @@
 """
 
 import asyncio
-from typing import (Any, Callable, Awaitable, Iterable, List)
+from typing import Any, Callable, Awaitable, Iterable, List
 
 from quart.utils import run_sync
 
@@ -27,8 +27,9 @@ def sync_wait(coro: Awaitable[Any], loop: asyncio.AbstractEventLoop) -> Any:
     return fut.result()
 
 
-async def run_async_funcs(funcs: Iterable[Callable[..., Awaitable[Any]]], *args,
-                          **kwargs) -> List[Any]:
+async def run_async_funcs(
+    funcs: Iterable[Callable[..., Awaitable[Any]]], *args, **kwargs
+) -> List[Any]:
     """
     同时运行多个异步函数，并等待所有函数运行完成，返回运行结果列表。
     """

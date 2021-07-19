@@ -8,8 +8,7 @@ import asyncio
 import hmac
 import logging
 import re
-from typing import (Dict, Any, Optional, AnyStr, Callable, Union, Awaitable,
-                    Coroutine)
+from typing import Dict, Any, Optional, AnyStr, Callable, Union, Awaitable, Coroutine
 
 try:
     import ujson as json
@@ -19,8 +18,13 @@ except ImportError:
 from quart import Quart, request, abort, jsonify, websocket, Response
 
 from .api import AsyncApi, SyncApi
-from .api_impl import (SyncWrapperApi, HttpApi, WebSocketReverseApi,
-                       UnifiedApi, ResultStore)
+from .api_impl import (
+    SyncWrapperApi,
+    HttpApi,
+    WebSocketReverseApi,
+    UnifiedApi,
+    ResultStore,
+)
 from .bus import EventBus
 from .exceptions import Error, TimingError
 from .event import Event
@@ -32,10 +36,10 @@ from . import exceptions
 from .exceptions import *  # noqa: F401, F403
 
 __all__ = [
-    'CQHttp',
-    'Event',
-    'Message',
-    'MessageSegment',
+    "CQHttp",
+    "Event",
+    "Message",
+    "MessageSegment",
 ]
 __all__ += exceptions.__all__
 
@@ -43,14 +47,12 @@ __pdoc__ = {}
 
 
 def _deco_maker(deco_method: Callable, type_: str) -> Callable:
-
-    def deco_deco(self,
-                  arg: Optional[Union[str, Callable]] = None,
-                  *sub_event_names: str) -> Callable:
-
+    def deco_deco(
+        self, arg: Optional[Union[str, Callable]] = None, *sub_event_names: str
+    ) -> Callable:
         def deco(func: Callable) -> Callable:
             if isinstance(arg, str):
-                e = [type_ + '.' + e for e in [arg] + list(sub_event_names)]
+                e = [type_ + "." + e for e in [arg] + list(sub_event_names)]
                 # self.on(*e)(func)
                 deco_method(self, *e)(func)
             else:
@@ -91,16 +93,18 @@ class CQHttp(AsyncApi):
     发送请求并获取调用结果。
     """
 
-    def __init__(self,
-                 import_name: str = '',
-                 *,
-                 api_root: Optional[str] = None,
-                 access_token: Optional[str] = None,
-                 secret: Optional[AnyStr] = None,
-                 message_class: Optional[type] = None,
-                 api_timeout_sec: Optional[float] = None,
-                 server_app_kwargs: Optional[dict] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        import_name: str = "",
+        *,
+        api_root: Optional[str] = None,
+        access_token: Optional[str] = None,
+        secret: Optional[AnyStr] = None,
+        message_class: Optional[type] = None,
+        api_timeout_sec: Optional[float] = None,
+        server_app_kwargs: Optional[dict] = None,
+        **kwargs,
+    ):
         """
         ``import_name`` 参数为当前模块（使用 `CQHttp` 的模块）的导入名，通常传入
         ``__name__`` 或不传入。
@@ -134,23 +138,24 @@ class CQHttp(AsyncApi):
 
         self._server_app = Quart(import_name, **(server_app_kwargs or {}))
         self._server_app.before_serving(self._before_serving)
-        self._server_app.add_url_rule('/',
-                                      methods=['POST'],
-                                      view_func=self._handle_http_event)
-        for p in ('/ws', '/ws/event', '/ws/api'):
-            self._server_app.add_websocket(p,
-                                           strict_slashes=False,
-                                           view_func=self._handle_wsr)
+        self._server_app.add_url_rule(
+            "/", methods=["POST"], view_func=self._handle_http_event
+        )
+        for p in ("/ws", "/ws/event", "/ws/api"):
+            self._server_app.add_websocket(
+                p, strict_slashes=False, view_func=self._handle_wsr
+            )
 
-        self._configure(api_root, access_token, secret, message_class,
-                        api_timeout_sec)
+        self._configure(api_root, access_token, secret, message_class, api_timeout_sec)
 
-    def _configure(self,
-                   api_root: Optional[str] = None,
-                   access_token: Optional[str] = None,
-                   secret: Optional[AnyStr] = None,
-                   message_class: Optional[type] = None,
-                   api_timeout_sec: Optional[float] = None):
+    def _configure(
+        self,
+        api_root: Optional[str] = None,
+        access_token: Optional[str] = None,
+        secret: Optional[AnyStr] = None,
+        message_class: Optional[type] = None,
+        api_timeout_sec: Optional[float] = None,
+    ):
         self._message_class = message_class
         api_timeout_sec = api_timeout_sec or 60  # wait for 60 secs by default
         self._access_token = access_token
@@ -158,9 +163,9 @@ class CQHttp(AsyncApi):
         self._api._http_api = HttpApi(api_root, access_token, api_timeout_sec)
         self._wsr_api_clients = {}  # connected wsr api clients
         self._wsr_event_clients = set()
-        self._api._wsr_api = WebSocketReverseApi(self._wsr_api_clients,
-                                                 self._wsr_event_clients,
-                                                 api_timeout_sec)
+        self._api._wsr_api = WebSocketReverseApi(
+            self._wsr_api_clients, self._wsr_event_clients, api_timeout_sec
+        )
 
     async def _before_serving(self):
         self._loop = asyncio.get_running_loop()
@@ -206,28 +211,21 @@ class CQHttp(AsyncApi):
         """
         if not self._sync_api:
             if not self._loop:
-                raise TimingError('attempt to access sync api '
-                                  'before bot is running')
+                raise TimingError("attempt to access sync api " "before bot is running")
             self._sync_api = SyncWrapperApi(self._api, self._loop)
         return self._sync_api
 
-    def run(self,
-            host: str = '127.0.0.1',
-            port: int = 8080,
-            *args,
-            **kwargs) -> None:
+    def run(self, host: str = "127.0.0.1", port: int = 8080, *args, **kwargs) -> None:
         """运行 bot 对象，实际就是运行 Quart app，参数与 `Quart.run` 一致。"""
-        if 'use_reloader' not in kwargs:
-            kwargs['use_reloader'] = False
+        if "use_reloader" not in kwargs:
+            kwargs["use_reloader"] = False
         self._server_app.run(host=host, port=port, *args, **kwargs)
 
-    def run_task(self,
-                 host: str = '127.0.0.1',
-                 port: int = 8080,
-                 *args,
-                 **kwargs) -> Coroutine[None, None, None]:
-        if 'use_reloader' not in kwargs:
-            kwargs['use_reloader'] = False
+    def run_task(
+        self, host: str = "127.0.0.1", port: int = 8080, *args, **kwargs
+    ) -> Coroutine[None, None, None]:
+        if "use_reloader" not in kwargs:
+            kwargs["use_reloader"] = False
         return self._server_app.run_task(host=host, port=port, *args, **kwargs)
 
     async def call_action(self, action: str, **params) -> Any:
@@ -237,8 +235,9 @@ class CQHttp(AsyncApi):
         """
         return await self._api.call_action(action=action, **params)
 
-    async def send(self, event: Event, message: Message_T,
-                   **kwargs) -> Optional[Dict[str, Any]]:
+    async def send(
+        self, event: Event, message: Message_T, **kwargs
+    ) -> Optional[Dict[str, Any]]:
         """
         向触发事件的主体发送消息。
 
@@ -249,24 +248,27 @@ class CQHttp(AsyncApi):
         msg = message if isinstance(message, Message) else Message(message)
         await run_async_funcs(self._before_sending_funcs, event, msg, kwargs)
 
-        at_sender = kwargs.pop('at_sender', False) and ('user_id' in event)
+        at_sender = kwargs.pop("at_sender", False) and ("user_id" in event)
 
-        keys = {'message_type', 'user_id', 'group_id', 'discuss_id'}
+        keys = {"message_type", "user_id", "group_id", "discuss_id"}
         params = {k: v for k, v in event.items() if k in keys}
-        params['message'] = msg
+        params["message"] = msg
         params.update(kwargs)
 
-        if 'message_type' not in params:
-            if 'group_id' in params:
-                params['message_type'] = 'group'
-            elif 'discuss_id' in params:
-                params['message_type'] = 'discuss'
-            elif 'user_id' in params:
-                params['message_type'] = 'private'
+        if "message_type" not in params:
+            if "group_id" in params:
+                params["message_type"] = "group"
+            elif "discuss_id" in params:
+                params["message_type"] = "discuss"
+            elif "user_id" in params:
+                params["message_type"] = "private"
 
-        if at_sender and params['message_type'] != 'private':
-            params['message'] = MessageSegment.at(params['user_id']) + \
-                                MessageSegment.text(' ') + params['message']
+        if at_sender and params["message_type"] != "private":
+            params["message"] = (
+                MessageSegment.at(params["user_id"])
+                + MessageSegment.text(" ")
+                + params["message"]
+            )
 
         return await self.send_msg(**params)
 
@@ -336,8 +338,10 @@ class CQHttp(AsyncApi):
 
         return deco
 
-    on_message = _deco_maker(on, 'message')
-    __pdoc__['CQHttp.on_message'] = """
+    on_message = _deco_maker(on, "message")
+    __pdoc__[
+        "CQHttp.on_message"
+    ] = """
     注册消息事件处理函数，用作装饰器，例如：
 
     ```py
@@ -363,14 +367,14 @@ class CQHttp(AsyncApi):
     ```
     """
 
-    on_notice = _deco_maker(on, 'notice')
-    __pdoc__['CQHttp.on_notice'] = "注册通知事件处理函数，用作装饰器，用法同上。"
+    on_notice = _deco_maker(on, "notice")
+    __pdoc__["CQHttp.on_notice"] = "注册通知事件处理函数，用作装饰器，用法同上。"
 
-    on_request = _deco_maker(on, 'request')
-    __pdoc__['CQHttp.on_request'] = "注册请求事件处理函数，用作装饰器，用法同上。"
+    on_request = _deco_maker(on, "request")
+    __pdoc__["CQHttp.on_request"] = "注册请求事件处理函数，用作装饰器，用法同上。"
 
-    on_meta_event = _deco_maker(on, 'meta_event')
-    __pdoc__['CQHttp.on_meta_event'] = "注册元事件处理函数，用作装饰器，用法同上。"
+    on_meta_event = _deco_maker(on, "meta_event")
+    __pdoc__["CQHttp.on_meta_event"] = "注册元事件处理函数，用作装饰器，用法同上。"
 
     def hook_before(self, event_name: str, func: Callable) -> None:
         """注册事件处理前的钩子函数。"""
@@ -404,8 +408,10 @@ class CQHttp(AsyncApi):
 
         return deco
 
-    before_message = _deco_maker(before, 'message')
-    __pdoc__['CQHttp.before_message'] = """
+    before_message = _deco_maker(before, "message")
+    __pdoc__[
+        "CQHttp.before_message"
+    ] = """
     注册消息事件处理前的钩子函数，用作装饰器，例如：
 
     ```py
@@ -431,14 +437,14 @@ class CQHttp(AsyncApi):
     ```
     """
 
-    before_notice = _deco_maker(before, 'notice')
-    __pdoc__['CQHttp.before_notice'] = "注册通知事件处理前的钩子函数，用作装饰器，用法同上。"
+    before_notice = _deco_maker(before, "notice")
+    __pdoc__["CQHttp.before_notice"] = "注册通知事件处理前的钩子函数，用作装饰器，用法同上。"
 
-    before_request = _deco_maker(before, 'request')
-    __pdoc__['CQHttp.before_request'] = "注册请求事件处理前的钩子函数，用作装饰器，用法同上。"
+    before_request = _deco_maker(before, "request")
+    __pdoc__["CQHttp.before_request"] = "注册请求事件处理前的钩子函数，用作装饰器，用法同上。"
 
-    before_meta_event = _deco_maker(before, 'meta_event')
-    __pdoc__['CQHttp.before_meta_event'] = "注册元事件处理前的钩子函数，用作装饰器，用法同上。"
+    before_meta_event = _deco_maker(before, "meta_event")
+    __pdoc__["CQHttp.before_meta_event"] = "注册元事件处理前的钩子函数，用作装饰器，用法同上。"
 
     def on_startup(self, func: Callable) -> Callable:
         """
@@ -463,54 +469,55 @@ class CQHttp(AsyncApi):
             groups = await bot.get_group_list(self_id=event.self_id)
         ```
         """
-        return self.on_meta_event('lifecycle.connect')(func)
+        return self.on_meta_event("lifecycle.connect")(func)
 
     async def _handle_http_event(self) -> Response:
         if self._secret:
-            if 'X-Signature' not in request.headers:
-                self.logger.warning('signature header is missed')
+            if "X-Signature" not in request.headers:
+                self.logger.warning("signature header is missed")
                 abort(401)
 
             sec = self._secret
-            sec = sec.encode('utf-8') if isinstance(sec, str) else sec
-            sig = hmac.new(sec, await request.get_data(), 'sha1').hexdigest()
-            if request.headers['X-Signature'] != 'sha1=' + sig:
-                self.logger.warning('signature header is invalid')
+            sec = sec.encode("utf-8") if isinstance(sec, str) else sec
+            sig = hmac.new(sec, await request.get_data(), "sha1").hexdigest()
+            if request.headers["X-Signature"] != "sha1=" + sig:
+                self.logger.warning("signature header is invalid")
                 abort(403)
 
         payload = await request.json
         if not isinstance(payload, dict):
             abort(400)
 
-        if request.headers['X-Self-ID'] in self._wsr_api_clients:
+        if request.headers["X-Self-ID"] in self._wsr_api_clients:
             self.logger.warning(
-                'there is already a reverse websocket api connection, '
-                'so the event may be handled twice.')
+                "there is already a reverse websocket api connection, "
+                "so the event may be handled twice."
+            )
 
         response = await self._handle_event(payload)
         if isinstance(response, dict):
             return jsonify(response)
-        return Response('', 204)
+        return Response("", 204)
 
     async def _handle_wsr(self) -> None:
         if self._access_token:
-            auth = websocket.headers.get('Authorization', '')
-            m = re.fullmatch(r'(?:[Tt]oken|[Bb]earer) (?P<token>\S+)', auth)
+            auth = websocket.headers.get("Authorization", "")
+            m = re.fullmatch(r"(?:[Tt]oken|[Bb]earer) (?P<token>\S+)", auth)
             if not m:
-                self.logger.warning('authorization header is missed')
+                self.logger.warning("authorization header is missed")
                 abort(401)
 
-            token_given = m.group('token').strip()
+            token_given = m.group("token").strip()
             if token_given != self._access_token:
-                self.logger.warning('authorization header is invalid')
+                self.logger.warning("authorization header is invalid")
                 abort(403)
 
-        role = websocket.headers['X-Client-Role'].lower()
-        if role == 'event':
+        role = websocket.headers["X-Client-Role"].lower()
+        if role == "event":
             await self._handle_wsr_event()
-        elif role == 'api':
+        elif role == "api":
             await self._handle_wsr_api()
-        elif role == 'universal':
+        elif role == "universal":
             await self._handle_wsr_universal()
 
     async def _handle_wsr_event(self) -> None:
@@ -555,10 +562,9 @@ class CQHttp(AsyncApi):
                     # ignore invalid payload
                     continue
 
-                if 'post_type' in payload:
+                if "post_type" in payload:
                     # is a event
-                    asyncio.create_task(
-                        self._handle_event_with_response(payload))
+                    asyncio.create_task(self._handle_event_with_response(payload))
                 elif payload:
                     # is a api result
                     ResultStore.add(payload)
@@ -568,11 +574,11 @@ class CQHttp(AsyncApi):
 
     def _add_wsr_api_client(self) -> None:
         ws = websocket._get_current_object()
-        self_id = websocket.headers['X-Self-ID']
+        self_id = websocket.headers["X-Self-ID"]
         self._wsr_api_clients[self_id] = ws
 
     def _remove_wsr_api_client(self) -> None:
-        self_id = websocket.headers['X-Self-ID']
+        self_id = websocket.headers["X-Self-ID"]
         if self_id in self._wsr_api_clients:
             # we must check the existence here,
             # because we allow wildcard ws connections,
@@ -593,29 +599,29 @@ class CQHttp(AsyncApi):
             return
 
         event_name = ev.name
-        self.logger.info(f'received event: {event_name}')
+        self.logger.info(f"received event: {event_name}")
 
-        if self._message_class and 'message' in ev:
-            ev['message'] = self._message_class(ev['message'])
+        if self._message_class and "message" in ev:
+            ev["message"] = self._message_class(ev["message"])
         results = list(
-            filter(lambda r: r is not None, await
-                   self._bus.emit(event_name, ev)))
+            filter(lambda r: r is not None, await self._bus.emit(event_name, ev))
+        )
         # return the first non-none result
         return results[0] if results else None
 
-    async def _handle_event_with_response(self, payload: Dict[str,
-                                                              Any]) -> None:
+    async def _handle_event_with_response(self, payload: Dict[str, Any]) -> None:
         response = await self._handle_event(payload)
         if isinstance(response, dict):
-            payload.pop('message', None)  # avoid wasting bandwidth
-            payload.pop('raw_message', None)
-            payload.pop('comment', None)
-            payload.pop('sender', None)
+            payload.pop("message", None)  # avoid wasting bandwidth
+            payload.pop("raw_message", None)
+            payload.pop("comment", None)
+            payload.pop("sender", None)
             try:
                 await self._api.call_action(
-                    self_id=payload['self_id'],
-                    action='.handle_quick_operation_async',
+                    self_id=payload["self_id"],
+                    action=".handle_quick_operation_async",
                     context=payload,
-                    operation=response)
+                    operation=response,
+                )
             except Error:
                 pass

@@ -9,7 +9,6 @@ from .utils import run_async_funcs
 
 
 class EventBus:
-
     def __init__(self):
         self._subscribers = defaultdict(set)
         self._hooks_before = defaultdict(set)
@@ -29,7 +28,6 @@ class EventBus:
             self._hooks_before[event].remove(func)
 
     def on(self, event: str) -> Callable:
-
         def decorator(func: Callable) -> Callable:
             self.subscribe(event, func)
             return func
@@ -37,7 +35,6 @@ class EventBus:
         return decorator
 
     def before(self, event: str) -> Callable:
-
         def decorator(func: Callable) -> Callable:
             self.hook_before(event, func)
             return func
@@ -49,7 +46,7 @@ class EventBus:
 
         while True:
             await run_async_funcs(self._hooks_before[event], *args, **kwargs)
-            event, *sub_event = event.rsplit('.', maxsplit=1)
+            event, *sub_event = event.rsplit(".", maxsplit=1)
             if not sub_event:
                 # the current event is the root event
                 break
@@ -57,9 +54,8 @@ class EventBus:
 
         results = []
         while True:
-            results += await run_async_funcs(self._subscribers[event], *args,
-                                             **kwargs)
-            event, *sub_event = event.rsplit('.', maxsplit=1)
+            results += await run_async_funcs(self._subscribers[event], *args, **kwargs)
+            event, *sub_event = event.rsplit(".", maxsplit=1)
             if not sub_event:
                 # the current event is the root event
                 break

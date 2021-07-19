@@ -24,8 +24,7 @@ class Api:
         """
         pass
 
-    def __getattr__(self,
-                    item: str) -> Callable[..., Union[Awaitable[Any], Any]]:
+    def __getattr__(self, item: str) -> Callable[..., Union[Awaitable[Any], Any]]:
         """获取一个可调用对象，用于调用对应 API。"""
         return functools.partial(self.call_action, item)
 

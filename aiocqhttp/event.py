@@ -14,7 +14,7 @@ class Event(dict):
     """
 
     @staticmethod
-    def from_payload(payload: Dict[str, Any]) -> 'Optional[Event]':
+    def from_payload(payload: Dict[str, Any]) -> "Optional[Event]":
         """
         从 OneBot 事件数据构造 `Event` 对象。
         """
@@ -30,7 +30,7 @@ class Event(dict):
         """
         事件类型，有 ``message``、``notice``、``request``、``meta_event`` 等。
         """
-        return self['post_type']
+        return self["post_type"]
 
     @property
     def detail_type(self) -> str:
@@ -38,7 +38,7 @@ class Event(dict):
         事件具体类型，依 `type` 的不同而不同，以 ``message`` 类型为例，有
         ``private``、``group``、``discuss`` 等。
         """
-        return self[f'{self.type}_type']
+        return self[f"{self.type}_type"]
 
     @property
     def sub_type(self) -> Optional[str]:
@@ -46,7 +46,7 @@ class Event(dict):
         事件子类型，依 `detail_type` 不同而不同，以 ``message.private`` 为例，有
         ``friend``、``group``、``discuss``、``other`` 等。
         """
-        return self.get('sub_type')
+        return self.get("sub_type")
 
     @property
     def name(self):
@@ -54,9 +54,9 @@ class Event(dict):
         事件名，对于有 `sub_type` 的事件，为 ``{type}.{detail_type}.{sub_type}``，否则为
         ``{type}.{detail_type}``。
         """
-        n = self.type + '.' + self.detail_type
+        n = self.type + "." + self.detail_type
         if self.sub_type:
-            n += '.' + self.sub_type
+            n += "." + self.sub_type
         return n
 
     self_id: int  # 机器人自身 ID
@@ -80,4 +80,4 @@ class Event(dict):
         self[key] = value
 
     def __repr__(self) -> str:
-        return f'<Event, {super().__repr__()}>'
+        return f"<Event, {super().__repr__()}>"
