@@ -1,5 +1,9 @@
 # 更新日志
 
+## v1.4.1
+
+- 修复上一版本中 `ActionFailed` 的不兼容更新 [#53](https://github.com/nonebot/aiocqhttp/issues/53)
+
 ## v1.4.0
 
 - 调整 `ActionFailed` 错误信息格式 [#44](https://github.com/nonebot/aiocqhttp/pull/44)
