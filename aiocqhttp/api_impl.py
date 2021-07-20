@@ -34,7 +34,7 @@ def _handle_api_result(result: Optional[Dict[str, Any]]) -> Any:
     :raise ActionFailed: the 'status' field is 'failed'
     """
     if isinstance(result, dict):
-        if result.get('status') == 'failed':
+        if result['status'] == 'failed':
             raise ActionFailed(result=result)
         return result.get('data')
 

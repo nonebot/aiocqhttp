@@ -5,11 +5,12 @@ with open('README.md', 'r', encoding='utf-8') as f:
 
 setup(
     name='aiocqhttp',
-    version='1.4.0',
-    url='https://github.com/cqmoe/python-aiocqhttp',
+    version='1.4.1',
+    url='https://github.com/nonebot/aiocqhttp',
     license='MIT License',
     author='Richard Chien',
     author_email='richardchienthebest@gmail.com',
+    maintainer='NoneBot Team',
     description='A Python SDK with async I/O for OneBot (CQHTTP).',
     long_description=long_description,
     long_description_content_type="text/markdown",
