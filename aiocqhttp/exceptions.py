@@ -2,8 +2,6 @@
 此模块提供了异常类。
 """
 
-from typing import Optional
-
 __all__ = [
     'Error',
     'ApiNotAvailable',
