@@ -2,6 +2,8 @@
 此模块提供了异常类。
 """
 
+from typing import Optional
+
 __all__ = [
     'Error',
     'ApiNotAvailable',
@@ -48,19 +50,24 @@ class ActionFailed(ApiError):
 
     ```py
     except ActionFailed as e:
-        if e.retcode > 0:
-            pass  # error code returned by CQHTTP
-        elif e.retcode < 0:
-            pass  # error code returned by CoolQ
+        print(e)
+        # 或检查返回码
+        if e.retcode == 12345:
+            pass
     ```
     """
 
     def __init__(self, result: dict):
-        self.info = result
+        self.result = result
+
+    @property
+    def retcode(self) -> int:
+        """OneBot API 请求的返回码。"""
+        return self.result['retcode']
 
     def __repr__(self):
         return "<ActionFailed " + ", ".join(
-            f"{k}={v}" for k, v in self.info.items()) + ">"
+            f"{k}={repr(v)}" for k, v in self.result.items()) + ">"
 
     def __str__(self):
         return self.__repr__()
