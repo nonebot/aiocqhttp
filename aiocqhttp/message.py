@@ -386,13 +386,13 @@ class Message(list):
         def iter_function_name_and_extra() -> Iterable[Tuple[str, str]]:
             text_begin = 0
             for cqcode in re.finditer(
-                r"\[CQ:(?P<type>[a-zA-Z0-9-_.]+)"
-                r"(?P<params>"
-                r"(?:,[a-zA-Z0-9-_.]+=[^,\]]+)*"
-                r"),?\]",
-                msg_str,
+                    r"\[CQ:(?P<type>[a-zA-Z0-9-_.]+)"
+                    r"(?P<params>"
+                    r"(?:,[a-zA-Z0-9-_.]+=[^,\]]+)*"
+                    r"),?\]",
+                    msg_str,
             ):
-                yield "text", msg_str[text_begin : cqcode.pos + cqcode.start()]
+                yield "text", msg_str[text_begin:cqcode.pos + cqcode.start()]
                 text_begin = cqcode.pos + cqcode.end()
                 yield cqcode.group("type"), cqcode.group("params").lstrip(",")
             yield "text", msg_str[text_begin:]
@@ -401,19 +401,17 @@ class Message(list):
             if function_name == "text":
                 if extra:
                     # only yield non-empty text segment
-                    yield MessageSegment(
-                        type_=function_name, data={"text": unescape(extra)}
-                    )
+                    yield MessageSegment(type_=function_name,
+                                         data={"text": unescape(extra)})
             else:
-                extra_data = {
-                    k: unescape(v)
-                    for k, v in map(
+                data = {
+                    k: unescape(v) for k, v in map(
                         lambda x: x.split("=", maxsplit=1),
-                        filter(lambda x: x, (x.lstrip() for x in extra.split(","))),
+                        filter(lambda x: x, (
+                            x.lstrip() for x in extra.split(","))),
                     )
                 }
-                yield MessageSegment(type_=function_name, data=extra_data)
-
+                yield MessageSegment(type_=function_name, data=data)
 
     def __str__(self):
         return ''.join((str(seg) for seg in self))
