@@ -388,26 +388,28 @@ class Message(list):
             for cqcode in re.finditer(
                     r'\[CQ:(?P<type>[a-zA-Z0-9-_.]+)'
                     r'(?P<params>'
-                    r'(?:,[a-zA-Z0-9-_.]+=?[^,\]]*)*'
-                    r'),?\]', msg_str):
-                yield 'text', unescape(msg_str[text_begin:cqcode.pos +
-                                               cqcode.start()])
+                    r'(?:,[a-zA-Z0-9-_.]+=[^,\]]+)*'
+                    r'),?\]',
+                    msg_str,
+            ):
+                yield 'text', msg_str[text_begin:cqcode.pos + cqcode.start()]
                 text_begin = cqcode.pos + cqcode.end()
                 yield cqcode.group('type'), cqcode.group('params').lstrip(',')
-            yield 'text', unescape(msg_str[text_begin:])
+            yield 'text', msg_str[text_begin:]
 
         for function_name, extra in iter_function_name_and_extra():
             if function_name == 'text':
                 if extra:
                     # only yield non-empty text segment
                     yield MessageSegment(type_=function_name,
-                                         data={'text': extra})
+                                         data={'text': unescape(extra)})
             else:
                 data = {
-                    k: v for k, v in map(
+                    k: unescape(v) for k, v in map(
                         lambda x: x.split('=', maxsplit=1),
                         filter(lambda x: x, (
-                            x.lstrip() for x in extra.split(','))))
+                            x.lstrip() for x in extra.split(','))),
+                    )
                 }
                 yield MessageSegment(type_=function_name, data=data)
 

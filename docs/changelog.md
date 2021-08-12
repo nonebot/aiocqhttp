@@ -1,5 +1,9 @@
 # 更新日志
 
+## master
+
+- 修复从 `str` 构造 `Message` 时无法正确去转义参数 [#57](https://github.com/nonebot/aiocqhttp/issues/57)
+
 ## v1.4.1
 
 - 修复上一版本中 `ActionFailed` 的不兼容更新 [#53](https://github.com/nonebot/aiocqhttp/issues/53)
