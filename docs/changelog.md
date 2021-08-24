@@ -3,6 +3,7 @@
 ## master
 
 - 修复从 `str` 构造 `Message` 时无法正确去转义参数 [#57](https://github.com/nonebot/aiocqhttp/issues/57)
+- 修复无法构造空 `Message` 的问题
 
 ## v1.4.1
 

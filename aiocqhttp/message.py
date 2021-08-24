@@ -402,7 +402,7 @@ class Message(list):
 
     def __init__(self, msg: Any = None, *args, **kwargs):
         """
-        - ``msg``: 要转换为 `Message` 对象的字符串、列表或字典。
+        - ``msg``: 要转换为 `Message` 对象的字符串、列表或字典。不传入则构造空消息。
 
         当 ``msg`` 不能识别时，抛出 ``ValueError``。
         """
@@ -411,7 +411,7 @@ class Message(list):
             self.extend(msg)
         elif isinstance(msg, dict):
             self.append(msg)
-        else:
+        elif msg is not None:
             raise ValueError('the msg argument is not recognized')
 
     @staticmethod
