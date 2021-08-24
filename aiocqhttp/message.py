@@ -9,6 +9,9 @@ from typing import Iterable, Dict, Tuple, Any, Optional, Union
 from .typing import Message_T
 
 
+__pdoc__ = {}
+
+
 def escape(s: str, *, escape_comma: bool = True) -> str:
     """
     对字符串进行 CQ 码转义。
@@ -70,6 +73,13 @@ class MessageSegment(dict):
                  *,
                  type_: Optional[str] = None,
                  data: Optional[Dict[str, str]] = None):
+        """
+        - ``d``: 当有此参数且此参数中有 ``type`` 字段时，由此参数构造消息段
+        - ``type_``: 当没有传入 ``d`` 参数或 ``d`` 参数无法识别时，此参数必填，对应消息段的 ``type`` 字段
+        - ``data``: 对应消息段的 ``data`` 字段
+
+        当没有正确传入类型参数时，抛出 ``ValurError``。
+        """
         super().__init__()
         if isinstance(d, dict) and d.get('type'):
             self.update(d)
@@ -119,6 +129,7 @@ class MessageSegment(dict):
         self['data'] = data or {}
 
     def __str__(self):
+        """将消息段转换成字符串格式。"""
         if self.type == 'text':
             return escape(self.data.get('text', ''), escape_comma=False)
 
@@ -128,19 +139,38 @@ class MessageSegment(dict):
             params = ',' + params
         return '[CQ:{type}{params}]'.format(type=self.type, params=params)
 
+    __pdoc__['MessageSegment.__str__'] = True
+
     def __eq__(self, other):
+        """判断两个消息段是否相同。"""
         if not isinstance(other, MessageSegment):
             return False
         return self.type == other.type and self.data == other.data
+
+    __pdoc__['MessageSegment.__eq__'] = True
 
     def __iadd__(self, other):
         raise NotImplementedError
 
     def __add__(self, other: Any) -> 'Message':
+        """
+        拼接两个消息段。
+
+        当 ``other`` 不是合法的消息（段）时，抛出 ``ValueError``。
+        """
         return Message(self).__add__(other)
 
+    __pdoc__['MessageSegment.__add__'] = True
+
     def __radd__(self, other: Any) -> 'Message':
+        """
+        拼接两个消息段。
+
+        当 ``other`` 不是合法的消息（段）时，抛出 ``ValueError``。
+        """
         return Message(self).__radd__(other)
+
+    __pdoc__['MessageSegment.__radd__'] = True
 
     if sys.version_info >= (3, 9, 0):
         def __or__(self, other):
@@ -371,7 +401,11 @@ class Message(list):
     """
 
     def __init__(self, msg: Any = None, *args, **kwargs):
-        """``msg`` 参数为要转换为 `Message` 对象的字符串、列表或字典。"""
+        """
+        - ``msg``: 要转换为 `Message` 对象的字符串、列表或字典。
+
+        当 ``msg`` 不能识别时，抛出 ``ValueError``。
+        """
         super().__init__(*args, **kwargs)
         if isinstance(msg, (list, str)):
             self.extend(msg)
@@ -414,9 +448,17 @@ class Message(list):
                 yield MessageSegment(type_=function_name, data=data)
 
     def __str__(self):
+        """将消息转换成字符串格式。"""
         return ''.join((str(seg) for seg in self))
 
+    __pdoc__['Message.__str__'] = True
+
     def __iadd__(self, other: Any) -> 'Message':
+        """
+        将两个消息对象拼接。
+
+        当 ``other`` 不是合法的消息（段）时，抛出 ``ValueError``。
+        """
         if isinstance(other, Message):
             self.extend(other)
         elif isinstance(other, MessageSegment):
@@ -431,20 +473,40 @@ class Message(list):
             raise ValueError('the addend is not a message')
         return self
 
+    __pdoc__['Message.__iadd__'] = True
+
     def __add__(self, other: Any) -> 'Message':
+        """
+        将两个消息对象拼接。
+
+        当 ``other`` 不是合法的消息（段）时，抛出 ``ValueError``。
+        """
         result = Message(self)
         result.__iadd__(other)
         return result
 
+    __pdoc__['Message.__add__'] = True
+
     def __radd__(self, other: Any) -> 'Message':
+        """
+        将两个消息对象拼接。
+
+        当 ``other`` 不是合法的消息（段）时，抛出 ``ValueError``。
+        """
         try:
             result = Message(other)
             return result.__add__(self)
         except ValueError:
             raise ValueError('the left addend is not a message')
 
+    __pdoc__['Message.__radd__'] = True
+
     def append(self, obj: Any) -> 'Message':
-        """在消息末尾追加消息段。"""
+        """
+        在消息末尾追加消息段。
+
+        当 ``obj`` 不是一个能够被识别的消息段时，抛出 ``ValueError``。
+        """
         if isinstance(obj, MessageSegment):
             if self and self[-1].type == 'text' and obj.type == 'text':
                 self[-1].data['text'] += obj.data['text']
@@ -457,7 +519,11 @@ class Message(list):
         return self
 
     def extend(self, msg: Iterable[Any]) -> 'Message':
-        """在消息末尾追加消息（字符串或消息段列表）。"""
+        """
+        在消息末尾追加消息（字符串或消息段列表）。
+
+        当 ``msg`` 不是一个能够被识别的消息时，抛出 ``ValueError``。
+        """
         if isinstance(msg, str):
             msg = self._split_iter(msg)
 
