@@ -78,7 +78,7 @@ class MessageSegment(dict):
         - ``type_``: 当没有传入 ``d`` 参数或 ``d`` 参数无法识别时，此参数必填，对应消息段的 ``type`` 字段
         - ``data``: 对应消息段的 ``data`` 字段
 
-        当没有正确传入类型参数时，抛出 ``ValurError``。
+        当没有正确传入类型参数时，抛出 ``ValueError``。
         """
         super().__init__()
         if isinstance(d, dict) and d.get('type'):

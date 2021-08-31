@@ -1,6 +1,6 @@
 # 更新日志
 
-## master
+## v1.4.2
 
 - 修复从 `str` 构造 `Message` 时无法正确去转义参数 [#57](https://github.com/nonebot/aiocqhttp/issues/57)
 - 修复无法构造空 `Message` 的问题
