@@ -130,7 +130,7 @@ class CQHttp(AsyncApi):
         self._sync_api = None
         self._bus = EventBus()
         self._before_sending_funcs = set()
-        self._after_wsr_func = None
+        self._on_wsr_receive_func = None
         self._loop = None
 
         self._server_app = Quart(import_name, **(server_app_kwargs or {}))
@@ -481,9 +481,9 @@ class CQHttp(AsyncApi):
         async def handler(payload: bytes):
             return payload
         """
-        if self._after_wsr_func:
+        if self._on_wsr_receive_func:
             raise RuntimeError("`on_websocket_receive` can only register once.")
-        self._after_wsr_func = func
+        self._on_wsr_receive_func = func
         return func
 
     async def _handle_http_event(self) -> Response:
@@ -539,8 +539,8 @@ class CQHttp(AsyncApi):
         try:
             while True:
                 payload = await websocket.receive()
-                if self._after_wsr_func:
-                    payload = await self._after_wsr_func(payload)
+                if self._on_wsr_receive_func:
+                    payload = await self._on_wsr_receive_func(payload)
                 try:
                     payload = json.loads(payload)
                 except ValueError:
@@ -559,8 +559,8 @@ class CQHttp(AsyncApi):
         try:
             while True:
                 payload = await websocket.receive()
-                if self._after_wsr_func:
-                    payload = await self._after_wsr_func(payload)
+                if self._on_wsr_receive_func:
+                    payload = await self._on_wsr_receive_func(payload)
                 try:
                     payload = json.loads(payload)
                 except ValueError:
@@ -575,8 +575,8 @@ class CQHttp(AsyncApi):
         try:
             while True:
                 payload = await websocket.receive()
-                if self._after_wsr_func:
-                    payload = await self._after_wsr_func(payload)
+                if self._on_wsr_receive_func:
+                    payload = await self._on_wsr_receive_func(payload)
                 try:
                     payload = json.loads(payload)
                 except ValueError:
