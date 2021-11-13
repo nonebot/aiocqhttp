@@ -422,7 +422,7 @@ class Message(list):
             for cqcode in re.finditer(
                     r'\[CQ:(?P<type>[a-zA-Z0-9-_.]+)'
                     r'(?P<params>'
-                    r'(?:,[a-zA-Z0-9-_.]+=[^,\]]+)*'
+                    r'(?:,[a-zA-Z0-9-_.]+=[^,\]]*)*'
                     r'),?\]',
                     msg_str,
             ):
