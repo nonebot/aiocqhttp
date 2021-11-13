@@ -251,7 +251,7 @@ class CQHttp(AsyncApi):
 
         at_sender = kwargs.pop('at_sender', False) and ('user_id' in event)
 
-        keys = {'message_type', 'user_id', 'group_id', 'discuss_id'}
+        keys = {'message_type', 'user_id', 'group_id', 'discuss_id', 'guild_id', 'channel_id'}
         params = {k: v for k, v in event.items() if k in keys}
         params['message'] = msg
         params.update(kwargs)
@@ -263,12 +263,16 @@ class CQHttp(AsyncApi):
                 params['message_type'] = 'discuss'
             elif 'user_id' in params:
                 params['message_type'] = 'private'
+            elif 'channel_id' in params and 'guild_id' in params:
+                params['message_type'] = 'guild'
 
         if at_sender and params['message_type'] != 'private':
             params['message'] = MessageSegment.at(params['user_id']) + \
                                 MessageSegment.text(' ') + params['message']
-
-        return await self.send_msg(**params)
+        if params['message_type'] == 'guild':
+            return await self.send_guild_channel_msg(guild_id=params['guild_id'], channel_id=params['channel_id'], message=params['message'])
+        else:
+            return await self.send_msg(**params)
 
     def before_sending(self, func: Callable) -> Callable:
         """

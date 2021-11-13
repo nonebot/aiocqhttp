@@ -9,6 +9,9 @@ if sys.version_info >= (3, 8, 0):
     class _send_private_msg_ret(TypedDict):
         message_id: int
 
+    class _send_guild_channel_msg_ret(TypedDict):
+        message_id: int
+
     class _send_group_msg_ret(TypedDict):
         message_id: int
 
@@ -127,6 +130,7 @@ else:
     _send_private_msg_ret = Dict[str, Any]
     _send_group_msg_ret = Dict[str, Any]
     _send_msg_ret = Dict[str, Any]
+    _send_guild_channel_msg_ret = Dict[str, Any]
     _get_msg_ret = Dict[str, Any]
     _get_forward_msg_ret = Dict[str, Any]
     _get_login_info_ret = Dict[str, Any]
@@ -212,6 +216,23 @@ class Api:
             group_id: 群号（消息类型为 `group` 时需要）
             message: 要发送的内容
             auto_escape: 消息内容是否作为纯文本发送（即不解析 CQ 码），只在 `message` 字段是字符串时有效
+            self_id: 机器人 QQ 号
+        """
+
+    def send_guild_channel_msg(
+            self, *,
+            guild_id: int,
+            channel_id: int,
+            message: Message_T,
+            self_id: Optional[int] = None,
+    ) -> Union[Awaitable[_send_guild_channel_msg_ret], _send_msg_ret]:
+        """
+        频道消息。
+
+        Args:
+            guild_id: 频道ID
+            channel_id: 子频道ID
+            message: 要发送的内容
             self_id: 机器人 QQ 号
         """
 
@@ -737,6 +758,14 @@ class AsyncApi(Api):
             self_id: Optional[int] = None,
     ) -> _send_group_msg_ret: ...
 
+    async def send_guild_channel_msg(
+            self, *,
+            guild_id: int,
+            channel_id: int,
+            message: Message_T,
+            self_id: Optional[int] = None,
+    ) -> _send_guild_channel_msg_ret: ...
+
     async def send_msg(
             self, *,
             message_type: Optional[str] = None,
@@ -1002,6 +1031,14 @@ class SyncApi(Api):
             auto_escape: bool = False,
             self_id: Optional[int] = None,
     ) -> _send_group_msg_ret: ...
+
+    def send_guild_channel_msg(
+            self, *,
+            guild_id: int,
+            channel_id: int,
+            message: Message_T,
+            self_id: Optional[int] = None,
+    ) -> _send_guild_channel_msg_ret: ...
 
     def send_msg(
             self, *,
