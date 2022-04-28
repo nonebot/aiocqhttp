@@ -1,5 +1,10 @@
 # 更新日志
 
+## v1.4.3
+
+- 修复从 `str` 构造 `Message` 时无法识别空参数值 [#60](https://github.com/nonebot/aiocqhttp/issues/60)
+- 提升 Quart 依赖至 0.17. 如遇到依赖错误请升级
+
 ## v1.4.2
 
 - 修复从 `str` 构造 `Message` 时无法正确去转义参数 [#57](https://github.com/nonebot/aiocqhttp/issues/57)
