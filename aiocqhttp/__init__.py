@@ -226,8 +226,6 @@ class CQHttp(AsyncApi):
                  port: int = 8080,
                  *args,
                  **kwargs) -> Coroutine[None, None, None]:
-        if 'use_reloader' not in kwargs:
-            kwargs['use_reloader'] = False
         return self._server_app.run_task(host=host, port=port, *args, **kwargs)
 
     async def call_action(self, action: str, **params) -> Any:
