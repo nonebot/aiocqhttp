@@ -62,7 +62,7 @@ class HttpApi(AsyncApi):
             headers['Authorization'] = 'Bearer ' + self._access_token
 
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=self._timeout_sec) as client:
                 resp = await client.post(self._api_root + action,
                                          json=params,
                                          headers=headers)
