@@ -1,5 +1,10 @@
 # 更新日志
 
+## v1.4.4
+
+- 修复 `run_task()` 不可用的问题 [#69](https://github.com/nonebot/aiocqhttp/pull/69)
+- 修复 `HttpApi` 超时时间设置不生效的问题 [#71](https://github.com/nonebot/aiocqhttp/pull/71)
+
 ## v1.4.3
 
 - 修复从 `str` 构造 `Message` 时无法识别空参数值 [#60](https://github.com/nonebot/aiocqhttp/issues/60)
