@@ -217,7 +217,7 @@ class LazyApi(Api):
     延迟获取 `aiocqhttp.api.Api` 对象。
     """
 
-    def __init__(self, api_getter: Callable[[], Union[Api]]):
+    def __init__(self, api_getter: Callable[[], Api]):
         self._api_getter = api_getter
 
     def call_action(self, action: str, **params) -> Union[Awaitable[Any], Any]:
